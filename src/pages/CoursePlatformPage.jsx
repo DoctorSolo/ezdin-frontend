@@ -105,7 +105,7 @@ const CoursePlatformPage = () => {
             onClick={() => navigate("/perfil")}
           >
             <span className="w-8 h-8 rounded-full bg-green-200 flex items-center justify-center text-green-800 font-bold border border-green-300">
-              U
+              CK
             </span>
           </button>
         </div>
