@@ -1,7 +1,10 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import Logo2 from "../assets/Logo2.png";
 
 const CoursePlatformPage = () => {
+  const navigate = useNavigate();
+
   // Dados mockados para demonstração
   const userName = "Usuário"; // Removido nome fixo
   const courseName = "Trilha de Educação Financeira";
@@ -48,7 +51,7 @@ const CoursePlatformPage = () => {
   const [openSections, setOpenSections] = React.useState([1]);
   const handleToggleSection = (id) => {
     setOpenSections((prev) =>
-      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id],
     );
   };
 
@@ -99,6 +102,7 @@ const CoursePlatformPage = () => {
             className="flex items-center gap-2 p-1 rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-white"
             aria-label="Perfil"
             tabIndex={0}
+            onClick={() => navigate("/perfil")}
           >
             <span className="w-8 h-8 rounded-full bg-green-200 flex items-center justify-center text-green-800 font-bold border border-green-300">
               U
