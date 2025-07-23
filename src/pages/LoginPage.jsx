@@ -1,119 +1,72 @@
 import { useState, useEffect } from "react";
-import { useForm } from "../hooks/useForm";
 import Input from "../components/Input";
 import Button from "../components/Button";
-import apiService from "../services/api";
-import { GoogleLoginButton } from "../components/Button";
+import { useNavigate } from "react-router-dom";
+import Logo from "../assets/Logo.png";
 
 const LoginPage = () => {
+  const [values, setValues] = useState({ email: "", password: "" });
+  const [errors, setErrors] = useState({ email: "", password: "" });
+  const [touched, setTouched] = useState({ email: false, password: false });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.title = "Login - ezDin";
   }, []);
 
-  const validationRules = {
-    email: [
-      { required: true, message: "Email é obrigatório" },
-      {
-        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        message: "Email deve ter um formato válido",
-      },
-    ],
-    password: [{ required: true, message: "Senha é obrigatória" }],
+  const validate = () => {
+    const newErrors = { email: "", password: "" };
+    if (!values.email) newErrors.email = "Email é obrigatório";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email))
+      newErrors.email = "Email inválido";
+    if (!values.password) newErrors.password = "Senha é obrigatória";
+    return newErrors;
   };
 
-  const {
-    values,
-    errors,
-    touched,
-    isSubmitting,
-    handleChange,
-    handleBlur,
-    handleSubmit,
-    setFormErrors,
-  } = useForm(
-    {
-      email: "",
-      password: "",
-    },
-    validationRules
-  );
+  const handleChange = (field) => (e) => {
+    setValues((prev) => ({ ...prev, [field]: e.target.value }));
+  };
 
-  const onSubmit = async (formData) => {
-    try {
+  const handleBlur = (field) => () => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setErrors(validate());
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setTouched({ email: true, password: true });
+    const validation = validate();
+    setErrors(validation);
+    if (validation.email || validation.password) return;
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
       setSubmitError("");
-      await apiService.loginUser(formData);
-      setSubmitSuccess(true);
-    } catch (error) {
-      if (
-        error.message.includes("invalid credentials") ||
-        error.message.includes("credenciais inválidas")
-      ) {
-        setFormErrors({ password: "Email ou senha inválidos" });
-      } else {
-        setSubmitError(
-          error.message || "Erro ao fazer login. Tente novamente."
-        );
-      }
-    }
+      navigate("/plataforma");
+    }, 800);
   };
-
-  if (submitSuccess) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-6">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-lg p-8 shadow-lg border border-gray-200">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Login realizado com sucesso!
-              </h1>
-              <p className="text-gray-600">Você está autenticado.</p>
-              <Button
-                onClick={() => setSubmitSuccess(false)}
-                className="w-full"
-              >
-                Voltar
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-6">
       <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Entrar</h1>
-          <p className="text-gray-600">Acesse sua conta para continuar</p>
+        <div className="flex flex-col items-center mb-8">
+          <img src={Logo} alt="Logo ezDin" className="w-20 h-20 mb-2" />
+          <h1 className="text-3xl font-extrabold text-green-600 mb-1 tracking-tight">
+            ezDin
+          </h1>
+          <span className="text-green-700 text-base font-medium mb-1">
+            Aprenda, controle. Fácil assim!
+          </span>
         </div>
-
-        <div className="bg-white rounded-lg p-8 shadow-lg border border-gray-200">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <div className="bg-white rounded-lg p-8 shadow-lg border border-green-100">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {submitError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-red-600 text-sm">{submitError}</p>
               </div>
             )}
-
             <Input
               label="Email"
               type="email"
@@ -124,8 +77,9 @@ const LoginPage = () => {
               error={touched.email ? errors.email : ""}
               disabled={isSubmitting}
               autoComplete="username"
+              aria-label="Email"
+              tabIndex={0}
             />
-
             <Input
               label="Senha"
               type="password"
@@ -136,25 +90,27 @@ const LoginPage = () => {
               error={touched.password ? errors.password : ""}
               disabled={isSubmitting}
               autoComplete="current-password"
+              aria-label="Senha"
+              tabIndex={0}
             />
-
             <Button
               type="submit"
               variant="green"
               loading={isSubmitting}
               disabled={isSubmitting}
               className="w-full"
+              aria-label="Entrar"
+              tabIndex={0}
             >
               {isSubmitting ? "Entrando..." : "Entrar"}
             </Button>
           </form>
-
           <div className="mt-6 text-center">
-            <p className="text-gray-600 text-sm">
+            <p className="text-green-700 text-sm">
               Não tem uma conta?{" "}
               <a
                 href="/register"
-                className="text-blue-600 hover:text-blue-500 font-medium transition-colors"
+                className="text-blue-600 hover:text-blue-700 font-medium transition-colors underline"
                 tabIndex={0}
                 aria-label="Ir para página de cadastro"
               >
@@ -162,16 +118,6 @@ const LoginPage = () => {
               </a>
             </p>
           </div>
-
-          <div className="flex items-center my-6">
-            <div className="flex-grow border-t border-gray-200" />
-            <span className="mx-4 text-gray-400 text-sm">ou</span>
-            <div className="flex-grow border-t border-gray-200" />
-          </div>
-
-          <GoogleLoginButton
-            onClick={() => alert("Login com Google simulado!")}
-          />
         </div>
       </div>
     </div>

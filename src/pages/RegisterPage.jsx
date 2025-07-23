@@ -1,11 +1,29 @@
 import { useState, useEffect } from "react";
-import { useForm } from "../hooks/useForm";
 import Input from "../components/Input";
 import Button from "../components/Button";
-import apiService from "../services/api";
 import { useNavigate } from "react-router-dom";
+import Logo from "../assets/Logo.png";
 
 const RegisterPage = () => {
+  const [values, setValues] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [errors, setErrors] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [touched, setTouched] = useState({
+    fullName: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const navigate = useNavigate();
@@ -14,85 +32,72 @@ const RegisterPage = () => {
     document.title = "Cadastro - ezDin";
   }, []);
 
-  const validationRules = {
-    fullName: [
-      { required: true, message: "Nome completo é obrigatório" },
-      { minLength: 2, message: "Nome deve ter pelo menos 2 caracteres" },
-      { maxLength: 100, message: "Nome deve ter no máximo 100 caracteres" },
-    ],
-    email: [
-      { required: true, message: "Email é obrigatório" },
-      {
-        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        message: "Email deve ter um formato válido",
-      },
-    ],
-    password: [
-      { required: true, message: "Senha é obrigatória" },
-      { minLength: 6, message: "Senha deve ter pelo menos 6 caracteres" },
-      { maxLength: 100, message: "Senha deve ter no máximo 100 caracteres" },
-    ],
-    confirmPassword: [
-      { required: true, message: "Confirmação de senha é obrigatória" },
-      {
-        custom: (value, values) => {
-          if (value !== values.password) {
-            return "As senhas não coincidem";
-          }
-          return null;
-        },
-      },
-    ],
-  };
-
-  const {
-    values,
-    errors,
-    touched,
-    isSubmitting,
-    handleChange,
-    handleBlur,
-    handleSubmit,
-    setFormErrors,
-  } = useForm(
-    {
+  const validate = () => {
+    const newErrors = {
       fullName: "",
       email: "",
       password: "",
       confirmPassword: "",
-    },
-    validationRules
-  );
+    };
+    if (!values.fullName) newErrors.fullName = "Nome completo é obrigatório";
+    else if (values.fullName.length < 2)
+      newErrors.fullName = "Nome deve ter pelo menos 2 caracteres";
+    else if (values.fullName.length > 100)
+      newErrors.fullName = "Nome deve ter no máximo 100 caracteres";
+    if (!values.email) newErrors.email = "Email é obrigatório";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email))
+      newErrors.email = "Email inválido";
+    if (!values.password) newErrors.password = "Senha é obrigatória";
+    else if (values.password.length < 6)
+      newErrors.password = "Senha deve ter pelo menos 6 caracteres";
+    else if (values.password.length > 100)
+      newErrors.password = "Senha deve ter no máximo 100 caracteres";
+    if (!values.confirmPassword)
+      newErrors.confirmPassword = "Confirmação de senha é obrigatória";
+    else if (values.confirmPassword !== values.password)
+      newErrors.confirmPassword = "As senhas não coincidem";
+    return newErrors;
+  };
 
-  const onSubmit = async (formData) => {
-    try {
+  const handleChange = (field) => (e) => {
+    setValues((prev) => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleBlur = (field) => () => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setErrors(validate());
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setTouched({
+      fullName: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+    });
+    const validation = validate();
+    setErrors(validation);
+    if (
+      validation.fullName ||
+      validation.email ||
+      validation.password ||
+      validation.confirmPassword
+    )
+      return;
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
       setSubmitError("");
-
-      // Remove confirmPassword from submission data
-      const { ...submitData } = formData;
-
-      await apiService.registerUser(submitData);
-
       setSubmitSuccess(true);
-    } catch (error) {
-      if (
-        error.message.includes("email already exists") ||
-        error.message.includes("já existe")
-      ) {
-        setFormErrors({ email: "Este email já está cadastrado" });
-      } else {
-        setSubmitError(
-          error.message || "Erro ao criar conta. Tente novamente."
-        );
-      }
-    }
+    }, 800);
   };
 
   if (submitSuccess) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-6">
         <div className="max-w-md w-full">
-          <div className="bg-white rounded-lg p-8 shadow-lg border border-gray-200">
+          <div className="bg-white rounded-lg p-8 shadow-lg border border-green-100">
             <div className="text-center">
               <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
@@ -109,18 +114,20 @@ const RegisterPage = () => {
                   />
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl font-bold text-green-700 mb-2">
                 Conta criada com sucesso!
               </h1>
-              <p className="text-gray-600">
+              <p className="text-green-700">
                 Sua conta foi criada com sucesso. Agora você pode fazer login.
               </p>
-              <Button
-                onClick={() => setSubmitSuccess(false)}
-                className="w-full"
+              <button
+                onClick={() => navigate("/")}
+                className="w-full mt-6 text-blue-600 hover:text-blue-700 font-medium text-base transition-colors underline"
+                aria-label="Ir para Login"
+                tabIndex={0}
               >
-                Ir para Login
-              </Button>
+                Fazer login
+              </button>
             </div>
           </div>
         </div>
@@ -131,19 +138,22 @@ const RegisterPage = () => {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-6">
       <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Criar Conta</h1>
-          <p className="text-gray-600">Preencha seus dados para começar</p>
+        <div className="flex flex-col items-center mb-8">
+          <img src={Logo} alt="Logo ezDin" className="w-20 h-20 mb-2" />
+          <h1 className="text-3xl font-extrabold text-green-600 mb-1 tracking-tight">
+            ezDin
+          </h1>
+          <span className="text-green-700 text-base font-medium mb-1">
+            Aprenda, controle. Fácil assim!
+          </span>
         </div>
-
-        <div className="bg-white rounded-lg p-8 shadow-lg border border-gray-200">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <div className="bg-white rounded-lg p-8 shadow-lg border border-green-100">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {submitError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-red-600 text-sm">{submitError}</p>
               </div>
             )}
-
             <Input
               label="Nome Completo"
               type="text"
@@ -153,8 +163,9 @@ const RegisterPage = () => {
               onBlur={handleBlur("fullName")}
               error={touched.fullName ? errors.fullName : ""}
               disabled={isSubmitting}
+              aria-label="Nome Completo"
+              tabIndex={0}
             />
-
             <Input
               label="Email"
               type="email"
@@ -164,8 +175,10 @@ const RegisterPage = () => {
               onBlur={handleBlur("email")}
               error={touched.email ? errors.email : ""}
               disabled={isSubmitting}
+              autoComplete="username"
+              aria-label="Email"
+              tabIndex={0}
             />
-
             <Input
               label="Senha"
               type="password"
@@ -175,8 +188,10 @@ const RegisterPage = () => {
               onBlur={handleBlur("password")}
               error={touched.password ? errors.password : ""}
               disabled={isSubmitting}
+              autoComplete="new-password"
+              aria-label="Senha"
+              tabIndex={0}
             />
-
             <Input
               label="Confirmar Senha"
               type="password"
@@ -186,33 +201,34 @@ const RegisterPage = () => {
               onBlur={handleBlur("confirmPassword")}
               error={touched.confirmPassword ? errors.confirmPassword : ""}
               disabled={isSubmitting}
+              autoComplete="new-password"
+              aria-label="Confirmar Senha"
+              tabIndex={0}
             />
-
             <Button
               type="submit"
               variant="green"
               loading={isSubmitting}
               disabled={isSubmitting}
               className="w-full"
+              aria-label="Criar Conta"
+              tabIndex={0}
             >
               {isSubmitting ? "Criando conta..." : "Criar Conta"}
             </Button>
           </form>
-
           <div className="mt-6 text-center">
-            <p className="text-gray-600 text-sm">
+            <p className="text-green-700 text-sm">
               Já tem uma conta?{" "}
               <button
                 type="button"
-                className="text-blue-600 hover:text-blue-500 font-medium transition-colors"
-                onClick={() => {
-                  navigate("/login");
-                }}
+                className="text-blue-600 hover:text-blue-700 font-medium transition-colors underline cursor-pointer"
+                onClick={() => navigate("/")}
                 tabIndex={0}
                 aria-label="Ir para página de login"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
-                    navigate("/login");
+                    navigate("/");
                   }
                 }}
               >

@@ -1,7 +1,7 @@
-import RegisterPage from "./pages/RegisterPage";
+import CoursePlatformPage from "./pages/CoursePlatformPage";
 
 function App() {
-  return <RegisterPage />;
+  return <CoursePlatformPage />;
 }
 
 export default App;
