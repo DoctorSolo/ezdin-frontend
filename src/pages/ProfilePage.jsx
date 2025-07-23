@@ -36,10 +36,10 @@ const ProfilePage = () => {
       // Simulando chamada da API
       setTimeout(() => {
         const userData = {
-          name: "João Silva",
-          email: "joao.silva@email.com",
+          name: "Clark Kent",
+          email: "clark.kent@gmail.com",
           bio: "Estudante de finanças pessoais apaixonado por investimentos e educação financeira.",
-          joinedDate: "Janeiro 2024",
+          joinedDate: "Janeiro 2025",
           avatar: null,
         };
         setUser(userData);
