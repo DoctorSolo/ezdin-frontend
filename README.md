@@ -1,6 +1,5 @@
 # 📚 ezDin Front-end
 
------
 
 ## 🎯 Sobre o Projeto
 
