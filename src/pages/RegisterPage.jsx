@@ -6,19 +6,16 @@ import Logo from "../assets/Logo.png";
 
 const RegisterPage = () => {
   const [values, setValues] = useState({
-    fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
   const [errors, setErrors] = useState({
-    fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
   const [touched, setTouched] = useState({
-    fullName: false,
     email: false,
     password: false,
     confirmPassword: false,
@@ -34,16 +31,10 @@ const RegisterPage = () => {
 
   const validate = () => {
     const newErrors = {
-      fullName: "",
       email: "",
       password: "",
       confirmPassword: "",
     };
-    if (!values.fullName) newErrors.fullName = "Nome completo é obrigatório";
-    else if (values.fullName.length < 2)
-      newErrors.fullName = "Nome deve ter pelo menos 2 caracteres";
-    else if (values.fullName.length > 100)
-      newErrors.fullName = "Nome deve ter no máximo 100 caracteres";
     if (!values.email) newErrors.email = "Email é obrigatório";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email))
       newErrors.email = "Email inválido";
@@ -68,10 +59,9 @@ const RegisterPage = () => {
     setErrors(validate());
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setTouched({
-      fullName: true,
       email: true,
       password: true,
       confirmPassword: true,
@@ -79,18 +69,42 @@ const RegisterPage = () => {
     const validation = validate();
     setErrors(validation);
     if (
-      validation.fullName ||
       validation.email ||
       validation.password ||
       validation.confirmPassword
-    )
+    ) {
       return;
+    }
+
     setIsSubmitting(true);
-    setTimeout(() => {
+    setSubmitError("");
+
+    try {
+      const response = await fetch("https://ezdin-backend.onrender.com/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: values.email,
+          password: values.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Registro bem-sucedido:", data);
+        setSubmitSuccess(true);
+      } else {
+        setSubmitError(data.message || "Erro desconhecido ao registrar.");
+      }
+    } catch (error) {
+      console.error("Erro durante o registro:", error);
+      setSubmitError("Não foi possível conectar ao servidor. Tente novamente mais tarde.");
+    } finally {
       setIsSubmitting(false);
-      setSubmitError("");
-      setSubmitSuccess(true);
-    }, 800);
+    }
   };
 
   if (submitSuccess) {
@@ -154,18 +168,6 @@ const RegisterPage = () => {
                 <p className="text-red-600 text-sm">{submitError}</p>
               </div>
             )}
-            <Input
-              label="Nome Completo"
-              type="text"
-              placeholder="Digite seu nome completo"
-              value={values.fullName}
-              onChange={handleChange("fullName")}
-              onBlur={handleBlur("fullName")}
-              error={touched.fullName ? errors.fullName : ""}
-              disabled={isSubmitting}
-              aria-label="Nome Completo"
-              tabIndex={0}
-            />
             <Input
               label="Email"
               type="email"

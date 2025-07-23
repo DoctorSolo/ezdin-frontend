@@ -34,18 +34,42 @@ const LoginPage = () => {
     setErrors(validate());
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setTouched({ email: true, password: true });
     const validation = validate();
     setErrors(validation);
     if (validation.email || validation.password) return;
+
     setIsSubmitting(true);
-    setTimeout(() => {
+    setSubmitError("");
+
+    try {
+      const response = await fetch("https://ezdin-backend.onrender.com/api/auth/login", { // 
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: values.email,
+          password: values.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Login successful:", data);
+        navigate("/plataforma");
+      } else {
+        setSubmitError(data.message || "Erro desconhecido ao fazer login.");
+      }
+    } catch (error) {
+      console.error("Erro durante o login:", error);
+      setSubmitError("Não foi possível conectar ao servidor. Tente novamente mais tarde.");
+    } finally {
       setIsSubmitting(false);
-      setSubmitError("");
-      navigate("/plataforma");
-    }, 800);
+    }
   };
 
   return (
