@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "../hooks/useForm";
 import Input from "../components/Input";
 import Button from "../components/Button";
@@ -9,6 +9,10 @@ const RegisterPage = () => {
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Cadastro - ezDin";
+  }, []);
 
   const validationRules = {
     fullName: [

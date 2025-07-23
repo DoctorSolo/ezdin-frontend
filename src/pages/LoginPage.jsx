@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "../hooks/useForm";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import apiService from "../services/api";
-import { useNavigate } from "react-router-dom";
+import { GoogleLoginButton } from "../components/Button";
 
 const LoginPage = () => {
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Login - ezDin";
+  }, []);
 
   const validationRules = {
     email: [
@@ -149,24 +152,26 @@ const LoginPage = () => {
           <div className="mt-6 text-center">
             <p className="text-gray-600 text-sm">
               Não tem uma conta?{" "}
-              <button
-                type="button"
+              <a
+                href="/register"
                 className="text-blue-600 hover:text-blue-500 font-medium transition-colors"
-                onClick={() => {
-                  navigate("/register");
-                }}
                 tabIndex={0}
                 aria-label="Ir para página de cadastro"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    navigate("/register");
-                  }
-                }}
               >
                 Criar conta
-              </button>
+              </a>
             </p>
           </div>
+
+          <div className="flex items-center my-6">
+            <div className="flex-grow border-t border-gray-200" />
+            <span className="mx-4 text-gray-400 text-sm">ou</span>
+            <div className="flex-grow border-t border-gray-200" />
+          </div>
+
+          <GoogleLoginButton
+            onClick={() => alert("Login com Google simulado!")}
+          />
         </div>
       </div>
     </div>
