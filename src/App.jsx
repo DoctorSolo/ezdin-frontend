@@ -1,7 +1,27 @@
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import CoursePlatformPage from "./pages/CoursePlatformPage";
+import ProfilePage from "./pages/ProfilePage";
 
 function App() {
-  return <CoursePlatformPage />;
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/plataforma" element={<CoursePlatformPage />} />
+        <Route path="/perfil" element={<ProfilePage />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;
