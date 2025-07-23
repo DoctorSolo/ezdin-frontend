@@ -5,17 +5,12 @@ import Button from "../components/Button";
 import apiService from "../services/api";
 import { useNavigate } from "react-router-dom";
 
-const RegisterPage = () => {
+const LoginPage = () => {
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const navigate = useNavigate();
 
   const validationRules = {
-    fullName: [
-      { required: true, message: "Nome completo é obrigatório" },
-      { minLength: 2, message: "Nome deve ter pelo menos 2 caracteres" },
-      { maxLength: 100, message: "Nome deve ter no máximo 100 caracteres" },
-    ],
     email: [
       { required: true, message: "Email é obrigatório" },
       {
@@ -23,22 +18,7 @@ const RegisterPage = () => {
         message: "Email deve ter um formato válido",
       },
     ],
-    password: [
-      { required: true, message: "Senha é obrigatória" },
-      { minLength: 6, message: "Senha deve ter pelo menos 6 caracteres" },
-      { maxLength: 100, message: "Senha deve ter no máximo 100 caracteres" },
-    ],
-    confirmPassword: [
-      { required: true, message: "Confirmação de senha é obrigatória" },
-      {
-        custom: (value, values) => {
-          if (value !== values.password) {
-            return "As senhas não coincidem";
-          }
-          return null;
-        },
-      },
-    ],
+    password: [{ required: true, message: "Senha é obrigatória" }],
   };
 
   const {
@@ -52,10 +32,8 @@ const RegisterPage = () => {
     setFormErrors,
   } = useForm(
     {
-      fullName: "",
       email: "",
       password: "",
-      confirmPassword: "",
     },
     validationRules
   );
@@ -63,22 +41,17 @@ const RegisterPage = () => {
   const onSubmit = async (formData) => {
     try {
       setSubmitError("");
-
-      // Remove confirmPassword from submission data
-      const { ...submitData } = formData;
-
-      await apiService.registerUser(submitData);
-
+      await apiService.loginUser(formData);
       setSubmitSuccess(true);
     } catch (error) {
       if (
-        error.message.includes("email already exists") ||
-        error.message.includes("já existe")
+        error.message.includes("invalid credentials") ||
+        error.message.includes("credenciais inválidas")
       ) {
-        setFormErrors({ email: "Este email já está cadastrado" });
+        setFormErrors({ password: "Email ou senha inválidos" });
       } else {
         setSubmitError(
-          error.message || "Erro ao criar conta. Tente novamente."
+          error.message || "Erro ao fazer login. Tente novamente."
         );
       }
     }
@@ -106,16 +79,14 @@ const RegisterPage = () => {
                 </svg>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Conta criada com sucesso!
+                Login realizado com sucesso!
               </h1>
-              <p className="text-gray-600">
-                Sua conta foi criada com sucesso. Agora você pode fazer login.
-              </p>
+              <p className="text-gray-600">Você está autenticado.</p>
               <Button
                 onClick={() => setSubmitSuccess(false)}
                 className="w-full"
               >
-                Ir para Login
+                Voltar
               </Button>
             </div>
           </div>
@@ -128,8 +99,8 @@ const RegisterPage = () => {
     <div className="min-h-screen bg-white flex items-center justify-center p-6">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Criar Conta</h1>
-          <p className="text-gray-600">Preencha seus dados para começar</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Entrar</h1>
+          <p className="text-gray-600">Acesse sua conta para continuar</p>
         </div>
 
         <div className="bg-white rounded-lg p-8 shadow-lg border border-gray-200">
@@ -141,17 +112,6 @@ const RegisterPage = () => {
             )}
 
             <Input
-              label="Nome Completo"
-              type="text"
-              placeholder="Digite seu nome completo"
-              value={values.fullName}
-              onChange={handleChange("fullName")}
-              onBlur={handleBlur("fullName")}
-              error={touched.fullName ? errors.fullName : ""}
-              disabled={isSubmitting}
-            />
-
-            <Input
               label="Email"
               type="email"
               placeholder="Digite seu email"
@@ -160,6 +120,7 @@ const RegisterPage = () => {
               onBlur={handleBlur("email")}
               error={touched.email ? errors.email : ""}
               disabled={isSubmitting}
+              autoComplete="username"
             />
 
             <Input
@@ -171,17 +132,7 @@ const RegisterPage = () => {
               onBlur={handleBlur("password")}
               error={touched.password ? errors.password : ""}
               disabled={isSubmitting}
-            />
-
-            <Input
-              label="Confirmar Senha"
-              type="password"
-              placeholder="Digite sua senha novamente"
-              value={values.confirmPassword}
-              onChange={handleChange("confirmPassword")}
-              onBlur={handleBlur("confirmPassword")}
-              error={touched.confirmPassword ? errors.confirmPassword : ""}
-              disabled={isSubmitting}
+              autoComplete="current-password"
             />
 
             <Button
@@ -191,28 +142,28 @@ const RegisterPage = () => {
               disabled={isSubmitting}
               className="w-full"
             >
-              {isSubmitting ? "Criando conta..." : "Criar Conta"}
+              {isSubmitting ? "Entrando..." : "Entrar"}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-gray-600 text-sm">
-              Já tem uma conta?{" "}
+              Não tem uma conta?{" "}
               <button
                 type="button"
                 className="text-blue-600 hover:text-blue-500 font-medium transition-colors"
                 onClick={() => {
-                  navigate("/login");
+                  navigate("/register");
                 }}
                 tabIndex={0}
-                aria-label="Ir para página de login"
+                aria-label="Ir para página de cadastro"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
-                    navigate("/login");
+                    navigate("/register");
                   }
                 }}
               >
-                Fazer login
+                Criar conta
               </button>
             </p>
           </div>
@@ -222,4 +173,4 @@ const RegisterPage = () => {
   );
 };
 
-export default RegisterPage;
+export default LoginPage;

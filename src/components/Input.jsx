@@ -3,7 +3,7 @@ import { forwardRef } from "react";
 const Input = forwardRef(
   (
     { label, error, type = "text", placeholder = "", className = "", ...props },
-    ref,
+    ref
   ) => {
     return (
       <div className="w-full">
@@ -22,15 +22,26 @@ const Input = forwardRef(
           text-gray-900 placeholder-gray-500
           rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           transition-all duration-200
-          ${error ? "border-red-500 focus:ring-red-500 focus:border-red-500" : ""}
+          ${
+            error
+              ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+              : ""
+          }
           ${className}
         `}
           {...props}
         />
-        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+        <p
+          className={`mt-2 text-sm min-h-[20px] transition-opacity duration-200 ${
+            error ? "text-red-500 opacity-100" : "opacity-0"
+          }`}
+          aria-live="polite"
+        >
+          {error || ""}
+        </p>
       </div>
     );
-  },
+  }
 );
 
 Input.displayName = "Input";
