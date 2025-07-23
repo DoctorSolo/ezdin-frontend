@@ -39,7 +39,7 @@ const ProfilePage = () => {
           name: "Clark Kent",
           email: "clark.kent@gmail.com",
           bio: "Estudante de finanças pessoais apaixonado por investimentos e educação financeira.",
-          joinedDate: "Janeiro 2025",
+          joinedDate: "Julho 2025",
           avatar: null,
         };
         setUser(userData);
