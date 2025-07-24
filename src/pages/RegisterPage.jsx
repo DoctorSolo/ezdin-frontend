@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import { useNavigate } from "react-router-dom";
-import logo_full_branca from "../assets/logo_full_branca.png";
+import Logo from "../assets/Logo.png";
 
 const RegisterPage = () => {
   const [values, setValues] = useState({
@@ -154,9 +154,10 @@ const RegisterPage = () => {
     <div className="min-h-screen bg-white flex items-center justify-center p-6">
       <div className="max-w-md w-full">
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-green-600 px-6 py-4 rounded-lg mb-4">
-            <img src={logo_full_branca} alt="Logo ezDin" className="w-25 h-7" />
-          </div>
+          <img src={Logo} alt="Logo ezDin" className="w-20 h-20 mb-2" />
+          <h1 className="text-3xl font-extrabold text-green-600 mb-1 tracking-tight">
+            ezDin
+          </h1>
           <span className="text-green-700 text-base font-medium mb-1">
             Aprenda, controle. Fácil assim!
           </span>
