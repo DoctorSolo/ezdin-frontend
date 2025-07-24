@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "../components/Input";
 import Button from "../components/Button";
-import Logo from "../assets/Logo.png";
+import logo_full_branca from "../assets/logo_full_branca.png";
 
 const ProfilePage = () => {
   const [user, setUser] = useState({
@@ -159,29 +159,39 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-green-600 shadow-sm border-b border-green-700">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <img src={Logo} alt="Logo ezDin" className="w-8 h-8" />
-            <h1 className="text-xl font-bold text-green-600">ezDin</h1>
+            <img src={logo_full_branca} alt="Logo ezDin" className="w-25 h-7" />
           </div>
           <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              className="flex items-center gap-2 px-4 py-2 text-white hover:bg-green-700 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-green-600"
               onClick={() => navigate("/plataforma")}
               aria-label="Voltar para plataforma"
             >
-              ← Voltar
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              Voltar
+            </button>
+            <button
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-white"
               onClick={handleLogout}
               aria-label="Sair da conta"
             >
               Sair
-            </Button>
+            </button>
           </div>
         </div>
       </header>
