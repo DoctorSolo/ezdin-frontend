@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import { useNavigate } from "react-router-dom";
-import Logo from "../assets/Logo.png";
+import logo_full_branca from "../assets/logo_full_branca.png";
 
 const RegisterPage = () => {
   const [values, setValues] = useState({
@@ -68,11 +68,7 @@ const RegisterPage = () => {
     });
     const validation = validate();
     setErrors(validation);
-    if (
-      validation.email ||
-      validation.password ||
-      validation.confirmPassword
-    ) {
+    if (validation.email || validation.password || validation.confirmPassword) {
       return;
     }
 
@@ -80,16 +76,19 @@ const RegisterPage = () => {
     setSubmitError("");
 
     try {
-      const response = await fetch("https://ezdin-backend.onrender.com/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "https://ezdin-backend.onrender.com/api/auth/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: values.email,
+            password: values.password,
+          }),
         },
-        body: JSON.stringify({
-          username: values.email,
-          password: values.password,
-        }),
-      });
+      );
 
       const data = await response.json();
 
@@ -101,7 +100,9 @@ const RegisterPage = () => {
       }
     } catch (error) {
       console.error("Erro durante o registro:", error);
-      setSubmitError("Não foi possível conectar ao servidor. Tente novamente mais tarde.");
+      setSubmitError(
+        "Não foi possível conectar ao servidor. Tente novamente mais tarde.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -153,10 +154,9 @@ const RegisterPage = () => {
     <div className="min-h-screen bg-white flex items-center justify-center p-6">
       <div className="max-w-md w-full">
         <div className="flex flex-col items-center mb-8">
-          <img src={Logo} alt="Logo ezDin" className="w-20 h-20 mb-2" />
-          <h1 className="text-3xl font-extrabold text-green-600 mb-1 tracking-tight">
-            ezDin
-          </h1>
+          <div className="bg-green-600 px-6 py-4 rounded-lg mb-4">
+            <img src={logo_full_branca} alt="Logo ezDin" className="w-25 h-7" />
+          </div>
           <span className="text-green-700 text-base font-medium mb-1">
             Aprenda, controle. Fácil assim!
           </span>
