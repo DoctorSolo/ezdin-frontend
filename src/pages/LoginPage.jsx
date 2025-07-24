@@ -45,16 +45,20 @@ const LoginPage = () => {
     setSubmitError("");
 
     try {
-      const response = await fetch("https://ezdin-backend.onrender.com/api/auth/login", { // 
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "https://ezdin-backend.onrender.com/api/auth/login",
+        {
+          //
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: values.email,
+            password: values.password,
+          }),
         },
-        body: JSON.stringify({
-          username: values.email,
-          password: values.password,
-        }),
-      });
+      );
 
       const data = await response.json();
 
@@ -66,7 +70,9 @@ const LoginPage = () => {
       }
     } catch (error) {
       console.error("Erro durante o login:", error);
-      setSubmitError("Não foi possível conectar ao servidor. Tente novamente mais tarde.");
+      setSubmitError(
+        "Não foi possível conectar ao servidor. Tente novamente mais tarde.",
+      );
     } finally {
       setIsSubmitting(false);
     }
