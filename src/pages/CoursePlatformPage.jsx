@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import Logo2 from "../assets/Logo2.png";
+import logo_full_branca from "../assets/logo_full_branca.png";
 
 const CoursePlatformPage = () => {
   const navigate = useNavigate();
@@ -51,7 +51,7 @@ const CoursePlatformPage = () => {
   const [openSections, setOpenSections] = React.useState([1]);
   const handleToggleSection = (id) => {
     setOpenSections((prev) =>
-      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
     );
   };
 
@@ -60,11 +60,12 @@ const CoursePlatformPage = () => {
       {/* Navbar fixa */}
       <nav className="fixed top-0 left-0 w-full h-16 bg-green-600 border-b border-green-700 z-30 flex items-center px-6 justify-between">
         <div className="flex items-center gap-4">
-          <img src={Logo2} alt="Logo ezDin" className="w-10 h-10 mr-2" />
-          <span className="text-2xl font-extrabold text-white tracking-tight">
-            ezDin
-          </span>
-          <span className="ml-3 text-white text-base font-medium hidden sm:block">
+          <img
+            src={logo_full_branca}
+            alt="Logo ezDin"
+            className="w-25 h-7 mr-2"
+          />
+          <span className=" ml-2 text-white text-base font-medium hidden sm:block">
             Aprenda, controle. Fácil assim!
           </span>
         </div>
@@ -115,16 +116,6 @@ const CoursePlatformPage = () => {
       <div className="flex flex-1 pt-16">
         {/* Sidebar fixa */}
         <aside className="w-72 bg-green-50 border-r border-green-200 h-[calc(100vh-4rem)] fixed top-16 left-0 flex flex-col z-20">
-          {/* Logo */}
-          <div className="h-20 flex flex-col items-center justify-center border-b border-green-100">
-            <img src={Logo2} alt="Logo ezDin" className="w-14 h-14 mb-1" />
-            <span className="text-xl font-extrabold text-green-700 tracking-tight">
-              ezDin
-            </span>
-            <span className="text-green-600 text-xs font-medium">
-              Aprenda, controle. Fácil assim!
-            </span>
-          </div>
           {/* Comece Aqui */}
           <div className="px-6 py-4">
             <div className="text-xs font-semibold text-green-400 uppercase mb-2">
