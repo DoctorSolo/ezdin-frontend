@@ -1,29 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import LessonExplanation from "../components/LessonExplanation";
 import LessonQuestionsNav from "../components/LessonQuestionsNav";
 import LessonQuestion from "../components/LessonQuestion";
 import { useNavigate } from "react-router-dom";
-import { allLessons } from "../data/allLessons";
 import SidebarTrilhaDireita from "../components/SidebarTrilhaDireita";
+import { conteudo } from "../data/conteudo";
 
 const LessonPage = ({ lessonData }) => {
   const LESSON_STORAGE_KEY = `lesson-answers-${lessonData?.id || "default"}`;
   const navigate = useNavigate();
+  const lastLessonIdRef = useRef(lessonData.id);
 
   // Carregar respostas do localStorage, se existirem
   const getInitialAnswers = () => {
-    if (!lessonData) return [];
+    if (!lessonData || !Array.isArray(lessonData.questoes)) return [];
     const saved = localStorage.getItem(LESSON_STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
       if (
         Array.isArray(parsed) &&
-        parsed.length === lessonData.questions.length
+        parsed.length === lessonData.questoes.length
       ) {
         return parsed;
       }
     }
-    return Array(lessonData.questions.length).fill(null);
+    return Array(lessonData.questoes.length).fill(null);
   };
 
   const [activeTab, setActiveTab] = useState("explanation");
@@ -31,23 +32,30 @@ const LessonPage = ({ lessonData }) => {
   const [answers, setAnswers] = useState(getInitialAnswers);
   const [showResults, setShowResults] = useState(false);
 
-  // Salvar respostas no localStorage sempre que answers mudar
   useEffect(() => {
     if (lessonData) {
       localStorage.setItem(LESSON_STORAGE_KEY, JSON.stringify(answers));
     }
   }, [answers, LESSON_STORAGE_KEY, lessonData]);
 
-  // Sempre que entrar em uma nova aula, resetar navegação para o início, mas manter respostas
   useEffect(() => {
-    // Sempre que entrar em uma nova aula, resetar navegação para o início, mas manter respostas
-    if (lessonData) {
+    if (lessonData && lessonData.id !== lastLessonIdRef.current) {
       setActiveTab("explanation");
       setActiveQuestion(0);
       setShowResults(false);
+      lastLessonIdRef.current = lessonData.id;
     }
     // eslint-disable-next-line
   }, [lessonData?.id]);
+
+  // Proteção defensiva após todos os hooks
+  if (!lessonData || !Array.isArray(lessonData.questoes)) {
+    return (
+      <div className="p-8 text-center text-red-600">
+        Aula inválida ou sem questões.
+      </div>
+    );
+  }
 
   // Verificar se lessonData existe após os hooks
   if (!lessonData) {
@@ -103,7 +111,7 @@ const LessonPage = ({ lessonData }) => {
       setActiveQuestion(0);
     } else if (
       activeTab === "question" &&
-      activeQuestion < lessonData.questions.length - 1
+      activeQuestion < lessonData.questoes.length - 1
     ) {
       setActiveQuestion((prev) => prev + 1);
     }
@@ -111,24 +119,54 @@ const LessonPage = ({ lessonData }) => {
 
   // Função para ir para a próxima aula
   const handleNextLesson = () => {
-    const currentIndex = allLessons.findIndex((l) => l.id === lessonData.id);
-    const nextLesson = allLessons[currentIndex + 1];
-    if (nextLesson) {
-      navigate(`/aula/${nextLesson.id}`);
-    } else {
-      alert("Esta é a última aula!");
+    // Busca a próxima aula na ordem dos módulos/aulas em conteudo.js
+    let found = false;
+    let nextAulaId = null;
+    for (let m = 0; m < conteudo.length; m++) {
+      for (let a = 0; a < conteudo[m].aulas.length; a++) {
+        if (found) {
+          nextAulaId = conteudo[m].aulas[a].id;
+          break;
+        }
+        if (conteudo[m].aulas[a].id === lessonData.id) {
+          found = true;
+        }
+      }
+      if (nextAulaId) break;
+    }
+    if (nextAulaId) {
+      navigate(`/aula/${nextAulaId}`);
     }
   };
 
+  // Função para saber se há próxima aula
+  const hasNextAula = (() => {
+    let found = false;
+    let hasNext = false;
+    for (let m = 0; m < conteudo.length; m++) {
+      for (let a = 0; a < conteudo[m].aulas.length; a++) {
+        if (found) {
+          hasNext = true;
+          break;
+        }
+        if (conteudo[m].aulas[a].id === lessonData.id) {
+          found = true;
+        }
+      }
+      if (hasNext) break;
+    }
+    return hasNext;
+  })();
+
   const allAnswered = answers.every((a) => a !== null);
   const correctCount = answers.filter(
-    (a, i) => lessonData.questions[i] && a === lessonData.questions[i].correct
+    (a, i) => lessonData.questoes[i] && a === lessonData.questoes[i].correta
   ).length;
-  const errorList = lessonData.questions
+  const errorList = lessonData.questoes
     .map((q, i) => ({
       ...q,
       userAnswer: answers[i],
-      isCorrect: answers[i] === q.correct,
+      isCorrect: answers[i] === q.correta,
     }))
     .filter((q) => !q.isCorrect);
 
@@ -139,18 +177,18 @@ const LessonPage = ({ lessonData }) => {
           <div className="max-w-4xl mx-auto p-4 pb-24">
             <div className="flex flex-col items-center">
               <div className="text-xl font-bold mb-2">
-                Você acertou {correctCount}/{lessonData.questions.length}{" "}
-                questões em "{lessonData.title}"
+                Você acertou {correctCount}/{lessonData.questoes.length}{" "}
+                questões em "{lessonData.titulo}"
               </div>
               <div className="w-full max-w-lg mb-4">
                 <div className="flex items-center gap-4 text-sm mb-2">
                   <span className="text-green-600">{correctCount} acertos</span>
                   <span className="text-red-600">
-                    {lessonData.questions.length - correctCount} erros
+                    {lessonData.questoes.length - correctCount} erros
                   </span>
                   <span className="ml-auto">
                     {answers.filter((a) => a !== null).length}/
-                    {lessonData.questions.length}
+                    {lessonData.questoes.length}
                   </span>
                 </div>
                 <div className="w-full h-2 bg-gray-200 rounded">
@@ -158,7 +196,7 @@ const LessonPage = ({ lessonData }) => {
                     className="h-2 bg-green-500 rounded"
                     style={{
                       width: `${
-                        (correctCount / lessonData.questions.length) * 100
+                        (correctCount / lessonData.questoes.length) * 100
                       }%`,
                     }}
                   ></div>
@@ -179,18 +217,18 @@ const LessonPage = ({ lessonData }) => {
                         <span>✖ Questão {idx + 1}</span>
                       </div>
                       <div className="text-gray-700 text-sm mb-1">
-                        {q.statement}
+                        {q.enunciado}
                       </div>
                       <div className="text-xs text-gray-500 mb-1">
                         Sua resposta:{" "}
                         <span className="font-semibold">
-                          {q.options[q.userAnswer] || "Não respondida"}
+                          {q.opcoes[q.userAnswer] || "Não respondida"}
                         </span>
                       </div>
                       <div className="text-xs text-gray-500 mb-1">
                         Correta:{" "}
                         <span className="font-semibold">
-                          {q.options[q.correct]}
+                          {q.opcoes[q.correta]}
                         </span>
                       </div>
                     </div>
@@ -222,12 +260,16 @@ const LessonPage = ({ lessonData }) => {
               Rever aula
             </button>
             <button
-              className="px-8 py-2 rounded-md text-center text-white font-bold text-2xl focus:outline-none transition-colors bg-green-500 hover:bg-green-600 disabled:text-green-200 disabled:cursor-not-allowed"
-              onClick={handleNextLesson}
-              disabled={
-                allLessons.findIndex((l) => l.id === lessonData.id) >=
-                allLessons.length - 1
+              className={
+                "px-8 py-2 rounded-md text-center text-white font-bold text-2xl focus:outline-none transition-colors " +
+                (hasNextAula
+                  ? "bg-green-500 hover:bg-green-600"
+                  : "bg-green-300 opacity-50 cursor-not-allowed")
               }
+              onClick={hasNextAula ? handleNextLesson : undefined}
+              disabled={!hasNextAula}
+              aria-disabled={!hasNextAula}
+              tabIndex={hasNextAula ? 0 : -1}
             >
               Próxima aula
             </button>
@@ -250,12 +292,12 @@ const LessonPage = ({ lessonData }) => {
               <li>Módulo 1</li>
               <li className="mx-2">/</li>
               <li className="font-semibold text-green-800">
-                {lessonData.title}
+                {lessonData.titulo}
               </li>
             </ol>
           </nav>
           <h1 className="text-2xl font-bold mb-2 text-green-800">
-            {lessonData.title}
+            {lessonData.titulo}
           </h1>
           <div className="flex items-center mb-4">
             <button
@@ -280,13 +322,11 @@ const LessonPage = ({ lessonData }) => {
             </button>
           </div>
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs text-green-400">
-              Aula {lessonData.id} de {allLessons.length}
-            </span>
+            <span className="text-xs text-green-400">Aula {lessonData.id}</span>
           </div>
           {/* Navegação das questões */}
           <LessonQuestionsNav
-            questions={lessonData.questions}
+            questions={lessonData.questoes}
             onSelect={handleSelectQuestion}
             activeIndex={activeTab === "question" ? activeQuestion : null}
             onShowExplanation={handleShowExplanation}
@@ -297,16 +337,16 @@ const LessonPage = ({ lessonData }) => {
             {activeTab === "explanation" ? (
               <div className="bg-white border border-green-100 rounded-lg shadow p-6">
                 <LessonExplanation
-                  text={lessonData.explanation}
+                  text={lessonData.explicacoes[0]}
                   canFinish={allAnswered}
                 />
               </div>
             ) : (
               <div className="bg-white border border-green-100 rounded-lg shadow p-6">
                 <LessonQuestion
-                  question={lessonData.questions[activeQuestion]}
+                  question={lessonData.questoes[activeQuestion]}
                   questionIndex={activeQuestion}
-                  totalQuestions={lessonData.questions.length}
+                  totalQuestions={lessonData.questoes.length}
                   selected={answers[activeQuestion]}
                   onBack={handleShowExplanation}
                   onSelectQuestion={handleSelectQuestion}
@@ -334,7 +374,7 @@ const LessonPage = ({ lessonData }) => {
             Voltar
           </button>
           {activeTab === "question" &&
-          activeQuestion === lessonData.questions.length - 1 ? (
+          activeQuestion === lessonData.questoes.length - 1 ? (
             <button
               className="px-8 py-2 rounded-md text-center text-white font-bold text-2xl focus:outline-none transition-colors bg-green-500 hover:bg-green-600 disabled:text-green-200 disabled:cursor-not-allowed"
               onClick={() => allAnswered && setShowResults(true)}
@@ -349,7 +389,7 @@ const LessonPage = ({ lessonData }) => {
               onClick={handleNext}
               disabled={
                 activeTab === "question" &&
-                activeQuestion === lessonData.questions.length - 1
+                activeQuestion === lessonData.questoes.length - 1
               }
               style={{ border: "none" }}
             >

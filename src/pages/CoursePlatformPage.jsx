@@ -1,93 +1,24 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo_full_branca from "../assets/logo_full_branca.png";
+import { getConteudo } from "../data/conteudo";
 import LessonPage from "./LessonPage";
 
 const CoursePlatformPage = () => {
   const navigate = useNavigate();
-
-  // Dados mockados para demonstração
-  const userName = "Usuário"; // Removido nome fixo
-  const courseName = "Trilha de Educação Financeira";
-  const progress = 7; // aulas concluídas
-  const totalLessons = 20;
-  const progressPercent = Math.round((progress / totalLessons) * 100);
-  const unreadForum = 99;
-  const courses = [
-    { id: 1, name: "Trilha de Educação Financeira", active: true },
-    { id: 2, name: "Planejamento de Gastos", active: false },
-    { id: 3, name: "Desafios Financeiros", active: false },
-    { id: 4, name: "Ferramentas de Controle", active: false },
-  ];
-  const sections = [
-    {
-      id: 1,
-      title: "Introdução",
-      lessons: [
-        { id: 1, title: "Aula 1 - Linguagem de Programação C", done: false },
-        { id: 2, title: "Aula 2 - Variáveis e Tipos de Dados", done: false },
-        { id: 3, title: "Aula 3 - Estruturas de Controle", done: false },
-      ],
-    },
-  ];
-
-  // Estado para seções colapsáveis
-  const [openSections, setOpenSections] = React.useState([1]);
-  const handleToggleSection = (id) => {
-    setOpenSections((prev) =>
-      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
-    );
-  };
-
-  // Estado para lição selecionada
   const [selectedLesson, setSelectedLesson] = useState(null);
 
-  // Dados mockados para cada lição (exemplo)
-  const lessonsData = {
-    1: {
-      id: 1,
-      title: "Boas-vindas",
-      explanation:
-        "Bem-vindo à trilha de educação financeira! Aqui você aprenderá os conceitos fundamentais para controlar suas finanças.",
-      questions: [
-        {
-          id: 1,
-          statement: "O que é educação financeira?",
-          options: [
-            "a) Aprender a gastar mais",
-            "b) Aprender a controlar e planejar o uso do dinheiro",
-            "c) Guardar todo o dinheiro",
-            "d) Não usar dinheiro",
-            "e) Nenhuma das anteriores",
-          ],
-        },
-      ],
-    },
-    2: {
-      id: 2,
-      title: "Como usar o ezDin",
-      explanation:
-        "Descubra como usar a plataforma ezDin para acompanhar seu progresso e aprender de forma eficiente.",
-      questions: [
-        {
-          id: 1,
-          statement: "Qual a principal função do ezDin?",
-          options: [
-            "a) Jogar",
-            "b) Aprender e controlar finanças",
-            "c) Comprar produtos",
-            "d) Vender serviços",
-            "e) Nenhuma das anteriores",
-          ],
-        },
-      ],
-    },
-    // ...adicione os dados das outras lições conforme necessário...
-  };
+  // Flatten all aulas for quick lookup
+  const conteudo = getConteudo();
+  const allAulas = conteudo.flatMap((m) =>
+    m.aulas.map((a) => ({ ...a, moduloId: m.id, moduloNome: m.nome }))
+  );
+  const getLessonById = (id) => allAulas.find((a) => a.id === id);
 
-  // Função para checar se a aula está completa (todas as respostas respondidas)
-  const isLessonComplete = (lessonId) => {
-    const key = `lesson-answers-${lessonId}`;
+  // Progresso
+  const totalLessons = allAulas.length;
+  const progress = allAulas.filter((aula) => {
+    const key = `lesson-answers-${aula.id}`;
     const saved = localStorage.getItem(key);
     if (!saved) return false;
     try {
@@ -96,17 +27,19 @@ const CoursePlatformPage = () => {
     } catch {
       return false;
     }
-  };
-
-  // Voltar para trilha
-  const handleBackToTrail = () => setSelectedLesson(null);
+  }).length;
+  const progressPercent = totalLessons
+    ? Math.round((progress / totalLessons) * 100)
+    : 0;
 
   // Renderizar LessonPage se uma lição estiver selecionada
   if (selectedLesson) {
+    const lessonData = getLessonById(selectedLesson);
+    if (!lessonData) return <div className="p-8">Aula não encontrada.</div>;
     return (
       <LessonPage
-        lessonData={lessonsData[selectedLesson]}
-        onBack={handleBackToTrail}
+        lessonData={lessonData}
+        onBack={() => setSelectedLesson(null)}
       />
     );
   }
@@ -167,10 +100,9 @@ const CoursePlatformPage = () => {
           </button>
         </div>
       </nav>
-
       {/* Layout principal */}
       <div className="flex flex-1 pt-16">
-        {/* Sidebar fixa */}
+        {/* Sidebar fixa original */}
         <aside className="w-72 bg-green-50 border-r border-green-200 h-[calc(100vh-4rem)] fixed top-16 left-0 flex flex-col z-20">
           {/* Comece Aqui */}
           <div className="px-6 py-4">
@@ -196,42 +128,57 @@ const CoursePlatformPage = () => {
               </a>
             </nav>
           </div>
-          {/* Cursos */}
+          {/* Trilhas */}
           <div className="px-6 py-4 flex-1 overflow-y-auto">
             <div className="text-xs font-semibold text-green-400 uppercase mb-2">
               Trilhas
             </div>
             <nav className="flex flex-col gap-1">
-              {courses.map((course) => (
-                <a
-                  key={course.id}
-                  href="#"
-                  className={`px-3 py-2 rounded flex items-center justify-between font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                    course.active
-                      ? "bg-green-600 text-white"
-                      : "text-green-900 hover:bg-green-100"
-                  }`}
-                  tabIndex={0}
-                  aria-label={course.name}
+              <a
+                href="#"
+                className="px-3 py-2 rounded flex items-center justify-between font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 bg-green-600 text-white"
+                tabIndex={0}
+                aria-label="Trilha de Educação Financeira"
+              >
+                <span>Trilha de Educação Financeira</span>
+                <svg
+                  className="w-4 h-4 ml-2 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <span>{course.name}</span>
-                  {course.active && (
-                    <svg
-                      className="w-4 h-4 ml-2 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  )}
-                </a>
-              ))}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </a>
+              <a
+                href="#"
+                className="px-3 py-2 rounded flex items-center justify-between font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 text-green-900 hover:bg-green-100"
+                tabIndex={0}
+                aria-label="Planejamento de Gastos"
+              >
+                <span>Planejamento de Gastos</span>
+              </a>
+              <a
+                href="#"
+                className="px-3 py-2 rounded flex items-center justify-between font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 text-green-900 hover:bg-green-100"
+                tabIndex={0}
+                aria-label="Desafios Financeiros"
+              >
+                <span>Desafios Financeiros</span>
+              </a>
+              <a
+                href="#"
+                className="px-3 py-2 rounded flex items-center justify-between font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 text-green-900 hover:bg-green-100"
+                tabIndex={0}
+                aria-label="Ferramentas de Controle"
+              >
+                <span>Ferramentas de Controle</span>
+              </a>
             </nav>
           </div>
           {/* Fórum */}
@@ -268,32 +215,16 @@ const CoursePlatformPage = () => {
               </svg>
               <span>Fórum</span>
               <span className="ml-2 bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[2.5rem] text-center">
-                {unreadForum > 99 ? "99+" : unreadForum}
+                99+
               </span>
             </button>
           </div>
         </aside>
-
         {/* Conteúdo principal */}
         <main className="flex-1 ml-72 p-10">
-          {/* Nome do curso */}
           <h1 className="text-3xl font-bold text-green-700 mb-2">
-            {courseName}
+            Trilha de Educação Financeira
           </h1>
-          {/* Boas-vindas + botão continuar */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="text-lg text-green-800">
-              Bem-vindo, <span className="font-semibold">{userName}</span>!
-            </div>
-            <button
-              className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-green-500 transition"
-              tabIndex={0}
-              aria-label="Continuar de onde parou"
-            >
-              Continuar
-            </button>
-          </div>
-          {/* Barra de progresso */}
           <div className="flex items-center gap-4 mb-8">
             <div className="flex-1 h-3 bg-green-100 rounded-full overflow-hidden">
               <div
@@ -305,87 +236,70 @@ const CoursePlatformPage = () => {
               {progress} de {totalLessons} aulas • {progressPercent}% concluído
             </div>
           </div>
-          {/* Seções colapsáveis */}
+          {/* Seções de módulos e aulas */}
           <div className="space-y-4">
-            {sections.map((section) => (
+            {conteudo.map((modulo) => (
               <section
-                key={section.id}
+                key={modulo.id}
                 className="bg-white rounded-lg shadow border border-green-100"
               >
-                <button
-                  className="w-full flex items-center justify-between px-6 py-4 text-left focus:outline-none focus:ring-2 focus:ring-green-500"
-                  onClick={() => handleToggleSection(section.id)}
-                  tabIndex={0}
-                  aria-label={`Seção ${section.title}`}
-                  aria-expanded={openSections.includes(section.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ")
-                      handleToggleSection(section.id);
-                  }}
-                >
+                <div className="w-full flex items-center justify-between px-6 py-4">
                   <span className="font-semibold text-green-800">
-                    {section.title}{" "}
+                    {modulo.nome}{" "}
                     <span className="ml-2 text-xs text-green-400">
-                      ({section.lessons.length} aulas)
+                      ({modulo.aulas.length} aulas)
                     </span>
                   </span>
-                  <svg
-                    className={`w-5 h-5 text-green-400 transform transition-transform ${
-                      openSections.includes(section.id)
-                        ? "rotate-180"
-                        : "rotate-0"
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-                {openSections.includes(section.id) && (
-                  <ul className="px-6 pb-4">
-                    {section.lessons.map((lesson) => (
-                      <li
-                        key={lesson.id}
-                        className="flex items-center gap-3 py-2"
-                      >
-                        <button
-                          className={`flex items-center gap-2 px-2 py-1 rounded transition-colors w-full text-left focus:outline-none focus:ring-2 focus:ring-green-500
-                            ${
-                              isLessonComplete(lesson.id)
-                                ? "bg-green-50 hover:bg-green-100"
-                                : "bg-white hover:bg-green-50"
+                </div>
+                <ul className="px-6 pb-4">
+                  {modulo.aulas.map((aula) => (
+                    <li key={aula.id} className="flex items-center gap-3 py-2">
+                      <button
+                        className={`flex items-center gap-2 px-2 py-1 rounded transition-colors w-full text-left focus:outline-none focus:ring-2 focus:ring-green-500
+                          ${(() => {
+                            const key = `lesson-answers-${aula.id}`;
+                            const saved = localStorage.getItem(key);
+                            let complete = false;
+                            if (saved) {
+                              try {
+                                const parsed = JSON.parse(saved);
+                                complete =
+                                  Array.isArray(parsed) &&
+                                  parsed.every((a) => a !== null);
+                              } catch {}
                             }
-                            hover:border-green-400 border border-transparent
-                          `}
-                          tabIndex={0}
-                          aria-label={`Acessar aula ${lesson.title}`}
-                          onClick={() => {
-                            navigate(`/aula/${lesson.id}`);
-                          }}
-                        >
-                          {isLessonComplete(lesson.id) ? (
+                            return complete
+                              ? "bg-green-50 hover:bg-green-100"
+                              : "bg-white hover:bg-green-50";
+                          })()}
+                          hover:border-green-400 border border-transparent`}
+                        tabIndex={0}
+                        aria-label={`Acessar aula ${aula.titulo}`}
+                        onClick={() => setSelectedLesson(aula.id)}
+                      >
+                        {(() => {
+                          const key = `lesson-answers-${aula.id}`;
+                          const saved = localStorage.getItem(key);
+                          let complete = false;
+                          if (saved) {
+                            try {
+                              const parsed = JSON.parse(saved);
+                              complete =
+                                Array.isArray(parsed) &&
+                                parsed.every((a) => a !== null);
+                            } catch {}
+                          }
+                          return complete ? (
                             <span className="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span>
                           ) : (
                             <span className="inline-block w-5 h-5 rounded-full border border-green-300 mr-2"></span>
-                          )}
-                          <span
-                            className={`text-green-900 ${
-                              lesson.done ? "line-through" : ""
-                            }`}
-                          >
-                            {lesson.title}
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                          );
+                        })()}
+                        <span className="text-green-900">{aula.titulo}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </section>
             ))}
           </div>
