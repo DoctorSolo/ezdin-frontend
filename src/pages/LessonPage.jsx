@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import LessonExplanation from "../components/LessonExplanation";
 import LessonQuestionsNav from "../components/LessonQuestionsNav";
 import LessonQuestion from "../components/LessonQuestion";
@@ -7,12 +7,14 @@ import SidebarTrilhaDireita from "../components/SidebarTrilhaDireita";
 import { conteudo } from "../data/conteudo";
 
 const LessonPage = ({ lessonData }) => {
-  const LESSON_STORAGE_KEY = `lesson-answers-${lessonData?.id || "default"}`;
+  const LESSON_STORAGE_KEY = `lesson-answers-${lessonData?.moduloId || "mod"}-${
+    lessonData?.id || "default"
+  }`;
   const navigate = useNavigate();
   const lastLessonIdRef = useRef(lessonData.id);
 
   // Carregar respostas do localStorage, se existirem
-  const getInitialAnswers = () => {
+  const getInitialAnswers = useCallback(() => {
     if (!lessonData || !Array.isArray(lessonData.questoes)) return [];
     const saved = localStorage.getItem(LESSON_STORAGE_KEY);
     if (saved) {
@@ -25,12 +27,17 @@ const LessonPage = ({ lessonData }) => {
       }
     }
     return Array(lessonData.questoes.length).fill(null);
-  };
+  }, [lessonData, LESSON_STORAGE_KEY]);
 
   const [activeTab, setActiveTab] = useState("explanation");
   const [activeQuestion, setActiveQuestion] = useState(0);
   const [answers, setAnswers] = useState(getInitialAnswers);
   const [showResults, setShowResults] = useState(false);
+
+  // Sempre que lessonData mudar, recarregar as respostas corretas do localStorage
+  useEffect(() => {
+    setAnswers(getInitialAnswers());
+  }, [lessonData, getInitialAnswers]);
 
   useEffect(() => {
     if (lessonData) {

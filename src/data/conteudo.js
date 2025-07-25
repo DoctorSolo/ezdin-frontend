@@ -81,3 +81,15 @@ export const getConteudo = () => {
   }
   return conteudo;
 };
+
+export const isLessonComplete = (moduloId, aulaId) => {
+  const key = `lesson-answers-${moduloId}-${aulaId}`;
+  const saved = localStorage.getItem(key);
+  if (!saved) return false;
+  try {
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) && parsed.every((a) => a !== null);
+  } catch {
+    return false;
+  }
+};

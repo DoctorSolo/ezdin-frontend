@@ -12,6 +12,7 @@ const LessonPageWrapper = () => {
     const aula = modulo.aulas.find((a) => a.id === Number(id));
     if (aula) {
       lessonData = aula;
+      lessonData.moduloId = modulo.id;
       break;
     }
   }

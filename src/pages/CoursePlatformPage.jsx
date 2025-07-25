@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo_full_branca from "../assets/logo_full_branca.png";
-import { getConteudo } from "../data/conteudo";
+import { getConteudo, isLessonComplete } from "../data/conteudo";
 import LessonPage from "./LessonPage";
 
 const CoursePlatformPage = () => {
@@ -17,17 +17,9 @@ const CoursePlatformPage = () => {
 
   // Progresso
   const totalLessons = allAulas.length;
-  const progress = allAulas.filter((aula) => {
-    const key = `lesson-answers-${aula.id}`;
-    const saved = localStorage.getItem(key);
-    if (!saved) return false;
-    try {
-      const parsed = JSON.parse(saved);
-      return Array.isArray(parsed) && parsed.every((a) => a !== null);
-    } catch {
-      return false;
-    }
-  }).length;
+  const progress = allAulas.filter((aula) =>
+    isLessonComplete(aula.moduloId, aula.id)
+  ).length;
   const progressPercent = totalLessons
     ? Math.round((progress / totalLessons) * 100)
     : 0;
@@ -256,45 +248,21 @@ const CoursePlatformPage = () => {
                     <li key={aula.id} className="flex items-center gap-3 py-2">
                       <button
                         className={`flex items-center gap-2 px-2 py-1 rounded transition-colors w-full text-left focus:outline-none focus:ring-2 focus:ring-green-500
-                          ${(() => {
-                            const key = `lesson-answers-${aula.id}`;
-                            const saved = localStorage.getItem(key);
-                            let complete = false;
-                            if (saved) {
-                              try {
-                                const parsed = JSON.parse(saved);
-                                complete =
-                                  Array.isArray(parsed) &&
-                                  parsed.every((a) => a !== null);
-                              } catch {}
-                            }
-                            return complete
+                          ${
+                            isLessonComplete(modulo.id, aula.id)
                               ? "bg-green-50 hover:bg-green-100"
-                              : "bg-white hover:bg-green-50";
-                          })()}
+                              : "bg-white hover:bg-green-50"
+                          }
                           hover:border-green-400 border border-transparent`}
                         tabIndex={0}
                         aria-label={`Acessar aula ${aula.titulo}`}
                         onClick={() => setSelectedLesson(aula.id)}
                       >
-                        {(() => {
-                          const key = `lesson-answers-${aula.id}`;
-                          const saved = localStorage.getItem(key);
-                          let complete = false;
-                          if (saved) {
-                            try {
-                              const parsed = JSON.parse(saved);
-                              complete =
-                                Array.isArray(parsed) &&
-                                parsed.every((a) => a !== null);
-                            } catch {}
-                          }
-                          return complete ? (
-                            <span className="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span>
-                          ) : (
-                            <span className="inline-block w-5 h-5 rounded-full border border-green-300 mr-2"></span>
-                          );
-                        })()}
+                        {isLessonComplete(modulo.id, aula.id) ? (
+                          <span className="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span>
+                        ) : (
+                          <span className="inline-block w-5 h-5 rounded-full border border-green-300 mr-2"></span>
+                        )}
                         <span className="text-green-900">{aula.titulo}</span>
                       </button>
                     </li>

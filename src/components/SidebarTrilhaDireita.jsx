@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getConteudo } from "../data/conteudo";
 
-const isLessonComplete = (lessonId) => {
-  const key = `lesson-answers-${lessonId}`;
+const isLessonComplete = (moduloId, lessonId) => {
+  const key = `lesson-answers-${moduloId}-${lessonId}`;
   const saved = localStorage.getItem(key);
   if (!saved) return false;
   try {
@@ -72,7 +72,7 @@ const SidebarTrilhaDireita = () => {
                         aria-label={`Acessar aula ${lesson.titulo}`}
                         onClick={() => navigate(`/aula/${lesson.id}`)}
                       >
-                        {isLessonComplete(lesson.id) ? (
+                        {isLessonComplete(mod.id, lesson.id) ? (
                           <span className="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span>
                         ) : (
                           <span className="inline-block w-4 h-4 rounded-full border border-green-300 mr-2"></span>
