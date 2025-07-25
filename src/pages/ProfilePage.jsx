@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import logo_full_branca from "../assets/logo_full_branca.png";
+import Fennec_Fox from "../assets/Fennec_Fox.jpg";
 
 const ProfilePage = () => {
   const [user, setUser] = useState({
@@ -40,7 +41,7 @@ const ProfilePage = () => {
           email: "clark.kent@gmail.com",
           bio: "Estudante de finanças pessoais apaixonado por investimentos e educação financeira.",
           joinedDate: "Julho 2025",
-          avatar: null,
+          avatar: Fennec_Fox,
         };
         setUser(userData);
         setValues({
