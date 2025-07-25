@@ -3,46 +3,15 @@ import LessonExplanation from "../components/LessonExplanation";
 import LessonQuestionsNav from "../components/LessonQuestionsNav";
 import LessonQuestion from "../components/LessonQuestion";
 import { useNavigate } from "react-router-dom";
+import { allLessons } from "../data/allLessons";
 
-// Exemplo de dados mockados
-const lessonData = {
-  id: 1,
-  title: "Aula 1 - Linguagem de Programação C",
-  explanation:
-    "Nesta lição, você aprenderá sobre a linguagem C, compilação, funções, argumentos, ferramentas, comandos, operadores, estruturas condicionais, repetição, booleanos, abstração, header de arquivos, função main, memória, imprecisão e overflow.",
-  questions: [
-    {
-      id: 1,
-      statement:
-        "Em uma época de intenso calor, um aparelho de ar-condicionado com potência de 1500W ficou ligado por mais tempo, chegando à marca mensal de consumo igual a 7500W.h. Determine por quanto tempo esse aparelho ficou ligado por dia.",
-      options: ["a) 2h", "b) 4h", "c) 5h", "d) 6h", "e) 7,5h"],
-      correct: 2,
-      explanation:
-        "Para encontrar o tempo diário, divida o consumo mensal (7500Wh) pela potência (1500W) para obter o total de horas no mês: 7500 / 1500 = 5h por dia.",
-    },
-    {
-      id: 2,
-      statement: "Qual é a função do header de arquivos em C?",
-      options: [
-        "a) Definir variáveis globais",
-        "b) Incluir bibliotecas e definições",
-        "c) Executar o programa principal",
-        "d) Gerenciar memória",
-        "e) Nenhuma das anteriores",
-      ],
-      correct: 1,
-      explanation:
-        "O header de arquivos em C serve para incluir bibliotecas e definições, permitindo o uso de funções e recursos externos.",
-    },
-  ],
-};
-
-const LESSON_STORAGE_KEY = `lesson-answers-${lessonData.id}`;
-
-const LessonPage = () => {
+const LessonPage = ({ lessonData }) => {
+  const LESSON_STORAGE_KEY = `lesson-answers-${lessonData?.id || "default"}`;
   const navigate = useNavigate();
+
   // Carregar respostas do localStorage, se existirem
   const getInitialAnswers = () => {
+    if (!lessonData) return [];
     const saved = localStorage.getItem(LESSON_STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -63,8 +32,30 @@ const LessonPage = () => {
 
   // Salvar respostas no localStorage sempre que answers mudar
   useEffect(() => {
-    localStorage.setItem(LESSON_STORAGE_KEY, JSON.stringify(answers));
-  }, [answers]);
+    if (lessonData) {
+      localStorage.setItem(LESSON_STORAGE_KEY, JSON.stringify(answers));
+    }
+  }, [answers, LESSON_STORAGE_KEY, lessonData]);
+
+  // Sempre que entrar em uma nova aula, resetar navegação para o início, mas manter respostas
+  useEffect(() => {
+    // Sempre que entrar em uma nova aula, resetar navegação para o início, mas manter respostas
+    if (lessonData) {
+      setActiveTab("explanation");
+      setActiveQuestion(0);
+      setShowResults(false);
+    }
+    // eslint-disable-next-line
+  }, [lessonData?.id]);
+
+  // Verificar se lessonData existe após os hooks
+  if (!lessonData) {
+    return (
+      <div className="p-8 text-center text-red-600">
+        Dados da aula não encontrados
+      </div>
+    );
+  }
 
   const handleSelectQuestion = (index) => {
     setActiveTab("question");
@@ -119,14 +110,18 @@ const LessonPage = () => {
 
   // Função para ir para a próxima aula
   const handleNextLesson = () => {
-    const nextLessonId = lessonData.id + 1;
-    // Supondo que as aulas seguem a rota /aula/{id}
-    navigate(`/aula/${nextLessonId}`);
+    const currentIndex = allLessons.findIndex((l) => l.id === lessonData.id);
+    const nextLesson = allLessons[currentIndex + 1];
+    if (nextLesson) {
+      navigate(`/aula/${nextLesson.id}`);
+    } else {
+      alert("Esta é a última aula!");
+    }
   };
 
   const allAnswered = answers.every((a) => a !== null);
   const correctCount = answers.filter(
-    (a, i) => a === lessonData.questions[i].correct
+    (a, i) => lessonData.questions[i] && a === lessonData.questions[i].correct
   ).length;
   const errorList = lessonData.questions
     .map((q, i) => ({
@@ -195,9 +190,6 @@ const LessonPage = () => {
                       {q.options[q.correct]}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-700 font-semibold">
-                    26% dos estudantes acertaram
-                  </div>
                 </div>
               ))
             )}
@@ -224,9 +216,12 @@ const LessonPage = () => {
             Rever aula
           </button>
           <button
-            className="px-8 py-2 rounded-md text-center text-blue-600 font-bold text-2xl focus:outline-none transition-colors hover:bg-blue-50"
+            className="px-8 py-2 rounded-md text-center text-white font-bold text-2xl focus:outline-none transition-colors bg-green-500 hover:bg-green-600 disabled:text-green-200 disabled:cursor-not-allowed"
             onClick={handleNextLesson}
-            disabled={lessonData.id >= 91} // Supondo 91 aulas
+            disabled={
+              allLessons.findIndex((l) => l.id === lessonData.id) >=
+              allLessons.length - 1
+            }
           >
             Próxima aula
           </button>
@@ -236,21 +231,23 @@ const LessonPage = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 pb-24">
+    <div className="max-w-4xl mx-auto p-4 pb-24 min-h-screen">
       {/* Breadcrumb e título */}
       <nav className="text-sm mb-2" aria-label="Breadcrumb">
-        <ol className="list-reset flex text-gray-500">
+        <ol className="list-reset flex text-green-600">
           <li>Curso</li>
           <li className="mx-2">/</li>
           <li>Módulo 1</li>
           <li className="mx-2">/</li>
-          <li className="font-semibold text-gray-900">{lessonData.title}</li>
+          <li className="font-semibold text-green-800">{lessonData.title}</li>
         </ol>
       </nav>
-      <h1 className="text-2xl font-bold mb-2">{lessonData.title}</h1>
+      <h1 className="text-2xl font-bold mb-2 text-green-800">
+        {lessonData.title}
+      </h1>
       <div className="flex items-center justify-between mb-4">
-        <span className="text-xs text-gray-400">
-          Aula {lessonData.id} de 91
+        <span className="text-xs text-green-400">
+          Aula {lessonData.id} de {allLessons.length}
         </span>
       </div>
       {/* Navegação das questões */}
@@ -264,31 +261,35 @@ const LessonPage = () => {
       {/* Conteúdo */}
       <div className="mt-6 min-h-[300px]">
         {activeTab === "explanation" ? (
-          <LessonExplanation
-            text={lessonData.explanation}
-            canFinish={allAnswered}
-          />
+          <div className="bg-white border border-green-100 rounded-lg shadow p-6">
+            <LessonExplanation
+              text={lessonData.explanation}
+              canFinish={allAnswered}
+            />
+          </div>
         ) : (
-          <LessonQuestion
-            question={lessonData.questions[activeQuestion]}
-            questionIndex={activeQuestion}
-            totalQuestions={lessonData.questions.length}
-            selected={answers[activeQuestion]}
-            onBack={handleShowExplanation}
-            onSelectQuestion={handleSelectQuestion}
-            onAnswer={handleAnswer}
-          />
+          <div className="bg-white border border-green-100 rounded-lg shadow p-6">
+            <LessonQuestion
+              question={lessonData.questions[activeQuestion]}
+              questionIndex={activeQuestion}
+              totalQuestions={lessonData.questions.length}
+              selected={answers[activeQuestion]}
+              onBack={handleShowExplanation}
+              onSelectQuestion={handleSelectQuestion}
+              onAnswer={handleAnswer}
+            />
+          </div>
         )}
       </div>
       {/* Navegação fixa no rodapé */}
       <div
-        className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-between items-center px-90 py-4 z-40"
+        className="fixed bottom-0 left-0 w-full bg-white border-t border-green-100 flex justify-between items-center px-90 py-4 z-40"
         style={{
           boxShadow: "0 -8px 24px -8px rgba(0,0,0,0.10)",
         }}
       >
         <button
-          className="px-8 py-2 rounded-md text-center text-gray-700 font-bold text-2xl focus:outline-none disabled:text-gray-300 transition-colors hover:bg-gray-100"
+          className="px-8 py-2 rounded-md text-center text-gray-700 font-bold text-2xl focus:outline-none disabled:text-gray-300 transition-colors hover:bg-green-100"
           onClick={handlePrev}
           disabled={activeTab === "explanation"}
           style={{ border: "none" }}
@@ -298,7 +299,7 @@ const LessonPage = () => {
         {activeTab === "question" &&
         activeQuestion === lessonData.questions.length - 1 ? (
           <button
-            className="px-8 py-2 rounded-md text-center text-green-600 font-bold text-2xl focus:outline-none disabled:text-green-200 transition-colors hover:bg-green-50"
+            className="px-8 py-2 rounded-md text-center text-white font-bold text-2xl focus:outline-none transition-colors bg-green-500 hover:bg-green-600 disabled:text-green-200 disabled:cursor-not-allowed"
             onClick={() => allAnswered && setShowResults(true)}
             disabled={!allAnswered}
             style={{ border: "none" }}
@@ -307,7 +308,7 @@ const LessonPage = () => {
           </button>
         ) : (
           <button
-            className="px-8 py-2 rounded-md text-center text-green-600 font-bold text-2xl focus:outline-none disabled:text-green-200 transition-colors hover:bg-green-50"
+            className="px-8 py-2 rounded-md text-center text-white font-bold text-2xl focus:outline-none transition-colors bg-green-500 hover:bg-green-600 disabled:text-green-200 disabled:cursor-not-allowed"
             onClick={handleNext}
             disabled={
               activeTab === "question" &&

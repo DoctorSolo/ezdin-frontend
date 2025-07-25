@@ -12,10 +12,10 @@ const LessonQuestion = ({ question, questionIndex, selected, onAnswer }) => {
         {question.options.map((opt, idx) => (
           <button
             key={opt}
-            className={`w-full text-left px-4 py-2 rounded border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+            className={`w-full text-left px-4 py-2 rounded border transition-colors focus:outline-none focus:ring-2 focus:ring-green-400 ${
               selected === idx
-                ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-400"
-                : "bg-gray-50 hover:bg-blue-50 text-gray-800 border-gray-200"
+                ? "bg-green-600 text-white border-green-600 ring-2 ring-green-400"
+                : "bg-gray-50 hover:bg-green-50 text-green-800 border-gray-200"
             }`}
             tabIndex={0}
             aria-label={`Alternativa ${opt}`}

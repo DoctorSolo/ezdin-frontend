@@ -26,10 +26,10 @@ const LessonQuestionsNav = ({
   return (
     <div className="flex items-center gap-2">
       <button
-        className={`px-3 py-1 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors ${
+        className={`px-3 py-1 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-green-400 transition-colors ${
           isExplanationActive
-            ? "bg-blue-600 text-white"
-            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+            ? "bg-green-500 text-white"
+            : "bg-green-50 hover:bg-green-100 text-green-800"
         }`}
         tabIndex={0}
         aria-label="Ver explicação"
@@ -43,10 +43,10 @@ const LessonQuestionsNav = ({
       {questions.map((q, idx) => (
         <button
           key={q.id}
-          className={`flex items-center px-3 py-1 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors ${
+          className={`flex items-center px-3 py-1 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-green-400 transition-colors ${
             activeIndex === idx
-              ? "bg-blue-600 text-white"
-              : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+              ? "bg-green-500 text-white"
+              : "bg-green-50 hover:bg-green-100 text-green-800"
           }`}
           tabIndex={0}
           aria-label={`Questão ${idx + 1}`}

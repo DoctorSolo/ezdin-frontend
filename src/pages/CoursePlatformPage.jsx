@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import LessonPage from "./LessonPage";
 import logo_full_branca from "../assets/logo_full_branca.png";
+import LessonPage from "./LessonPage";
 
 const CoursePlatformPage = () => {
   const navigate = useNavigate();
@@ -24,26 +24,9 @@ const CoursePlatformPage = () => {
       id: 1,
       title: "Introdução",
       lessons: [
-        { id: 1, title: "Boas-vindas", done: true },
-        { id: 2, title: "Como usar o ezDin", done: true },
-      ],
-    },
-    {
-      id: 2,
-      title: "Fundamentos",
-      lessons: [
-        { id: 3, title: "O que é educação financeira?", done: true },
-        { id: 4, title: "Controle de Gastos", done: false },
-        { id: 5, title: "Evite dívidas", done: false },
-      ],
-    },
-    {
-      id: 3,
-      title: "Prática",
-      lessons: [
-        { id: 6, title: "Planejamento de Objetivos", done: false },
-        { id: 7, title: "Desafios", done: false },
-        { id: 8, title: "Ferramentas ezDin", done: false },
+        { id: 1, title: "Aula 1 - Linguagem de Programação C", done: false },
+        { id: 2, title: "Aula 2 - Variáveis e Tipos de Dados", done: false },
+        { id: 3, title: "Aula 3 - Estruturas de Controle", done: false },
       ],
     },
   ];
@@ -100,6 +83,19 @@ const CoursePlatformPage = () => {
       ],
     },
     // ...adicione os dados das outras lições conforme necessário...
+  };
+
+  // Função para checar se a aula está completa (todas as respostas respondidas)
+  const isLessonComplete = (lessonId) => {
+    const key = `lesson-answers-${lessonId}`;
+    const saved = localStorage.getItem(key);
+    if (!saved) return false;
+    try {
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) && parsed.every((a) => a !== null);
+    } catch {
+      return false;
+    }
   };
 
   // Voltar para trilha
@@ -361,7 +357,7 @@ const CoursePlatformPage = () => {
                         <button
                           className={`flex items-center gap-2 px-2 py-1 rounded transition-colors w-full text-left focus:outline-none focus:ring-2 focus:ring-green-500
                             ${
-                              lesson.done
+                              isLessonComplete(lesson.id)
                                 ? "bg-green-50 hover:bg-green-100"
                                 : "bg-white hover:bg-green-50"
                             }
@@ -369,27 +365,14 @@ const CoursePlatformPage = () => {
                           `}
                           tabIndex={0}
                           aria-label={`Acessar aula ${lesson.title}`}
-                          onClick={() => setSelectedLesson(lesson.id)}
+                          onClick={() => {
+                            navigate(`/aula/${lesson.id}`);
+                          }}
                         >
-                          {lesson.done ? (
-                            <svg
-                              className="w-5 h-5 text-green-500"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
+                          {isLessonComplete(lesson.id) ? (
+                            <span className="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span>
                           ) : (
-                            <span
-                              className="w-5 h-5 rounded-full border-2 border-green-300 inline-block"
-                              aria-label="Aula não concluída"
-                            ></span>
+                            <span className="inline-block w-5 h-5 rounded-full border border-green-300 mr-2"></span>
                           )}
                           <span
                             className={`text-green-900 ${

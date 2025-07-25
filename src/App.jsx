@@ -8,6 +8,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import CoursePlatformPage from "./pages/CoursePlatformPage";
 import ProfilePage from "./pages/ProfilePage";
+import LessonPageWrapper from "./pages/LessonPageWrapper";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/plataforma" element={<CoursePlatformPage />} />
         <Route path="/perfil" element={<ProfilePage />} />
+        <Route path="/aula/:id" element={<LessonPageWrapper />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
