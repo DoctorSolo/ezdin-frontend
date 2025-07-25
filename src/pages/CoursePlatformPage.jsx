@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import LessonPage from "./LessonPage";
 import logo_full_branca from "../assets/logo_full_branca.png";
 
 const CoursePlatformPage = () => {
@@ -54,6 +55,65 @@ const CoursePlatformPage = () => {
       prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
     );
   };
+
+  // Estado para lição selecionada
+  const [selectedLesson, setSelectedLesson] = useState(null);
+
+  // Dados mockados para cada lição (exemplo)
+  const lessonsData = {
+    1: {
+      id: 1,
+      title: "Boas-vindas",
+      explanation:
+        "Bem-vindo à trilha de educação financeira! Aqui você aprenderá os conceitos fundamentais para controlar suas finanças.",
+      questions: [
+        {
+          id: 1,
+          statement: "O que é educação financeira?",
+          options: [
+            "a) Aprender a gastar mais",
+            "b) Aprender a controlar e planejar o uso do dinheiro",
+            "c) Guardar todo o dinheiro",
+            "d) Não usar dinheiro",
+            "e) Nenhuma das anteriores",
+          ],
+        },
+      ],
+    },
+    2: {
+      id: 2,
+      title: "Como usar o ezDin",
+      explanation:
+        "Descubra como usar a plataforma ezDin para acompanhar seu progresso e aprender de forma eficiente.",
+      questions: [
+        {
+          id: 1,
+          statement: "Qual a principal função do ezDin?",
+          options: [
+            "a) Jogar",
+            "b) Aprender e controlar finanças",
+            "c) Comprar produtos",
+            "d) Vender serviços",
+            "e) Nenhuma das anteriores",
+          ],
+        },
+      ],
+    },
+    // ...adicione os dados das outras lições conforme necessário...
+  };
+
+  // Voltar para trilha
+  const handleBackToTrail = () => setSelectedLesson(null);
+
+  // Renderizar LessonPage se uma lição estiver selecionada
+  if (selectedLesson) {
+    return (
+      <LessonPage
+        lessonData={lessonsData[selectedLesson]}
+        onBack={handleBackToTrail}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -298,33 +358,47 @@ const CoursePlatformPage = () => {
                         key={lesson.id}
                         className="flex items-center gap-3 py-2"
                       >
-                        {lesson.done ? (
-                          <svg
-                            className="w-5 h-5 text-green-500"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        ) : (
-                          <span
-                            className="w-5 h-5 rounded-full border-2 border-green-300 inline-block"
-                            aria-label="Aula não concluída"
-                          ></span>
-                        )}
-                        <span
-                          className={`text-green-900 ${
-                            lesson.done ? "line-through" : ""
-                          }`}
+                        <button
+                          className={`flex items-center gap-2 px-2 py-1 rounded transition-colors w-full text-left focus:outline-none focus:ring-2 focus:ring-green-500
+                            ${
+                              lesson.done
+                                ? "bg-green-50 hover:bg-green-100"
+                                : "bg-white hover:bg-green-50"
+                            }
+                            hover:border-green-400 border border-transparent
+                          `}
+                          tabIndex={0}
+                          aria-label={`Acessar aula ${lesson.title}`}
+                          onClick={() => setSelectedLesson(lesson.id)}
                         >
-                          {lesson.title}
-                        </span>
+                          {lesson.done ? (
+                            <svg
+                              className="w-5 h-5 text-green-500"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          ) : (
+                            <span
+                              className="w-5 h-5 rounded-full border-2 border-green-300 inline-block"
+                              aria-label="Aula não concluída"
+                            ></span>
+                          )}
+                          <span
+                            className={`text-green-900 ${
+                              lesson.done ? "line-through" : ""
+                            }`}
+                          >
+                            {lesson.title}
+                          </span>
+                        </button>
                       </li>
                     ))}
                   </ul>
