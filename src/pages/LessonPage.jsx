@@ -257,12 +257,22 @@ const LessonPage = ({ lessonData }) => {
             <button
               className="px-8 py-2 rounded-md text-center text-gray-700 font-bold text-2xl focus:outline-none transition-colors hover:bg-gray-100"
               onClick={handlePrev}
+              style={{
+                backgroundColor: "transparent",
+                border: "none",
+                outline: "none",
+              }}
             >
               Voltar à home
             </button>
             <button
-              className="px-8 py-2 rounded-md text-center text-green-600 font-bold text-2xl focus:outline-none transition-colors hover:bg-green-50"
+              className="px-8 py-2 rounded-md text-center text-gray-700 font-bold text-2xl focus:outline-none hover:bg-gray-100"
               onClick={handleNext}
+              style={{
+                backgroundColor: "transparent",
+                border: "none",
+                outline: "none",
+              }}
             >
               Rever aula
             </button>
