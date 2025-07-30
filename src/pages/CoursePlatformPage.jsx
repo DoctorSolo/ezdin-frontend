@@ -3,10 +3,13 @@ import { useNavigate } from "react-router-dom";
 import logo_full_branca from "../assets/logo_full_branca.png";
 import { getConteudo, isLessonComplete } from "../data/conteudo";
 import LessonPage from "./LessonPage";
+import { useScore } from "../hooks/useScore";
+import ScoreDisplay from "../components/ScoreDisplay";
 
 const CoursePlatformPage = () => {
   const navigate = useNavigate();
   const [selectedLesson, setSelectedLesson] = useState(null);
+  const { score } = useScore();
 
   // Flatten all aulas for quick lookup
   const conteudo = getConteudo();
@@ -64,6 +67,10 @@ const CoursePlatformPage = () => {
           />
         </div>
         <div className="flex items-center gap-4">
+          {/* Pontuação */}
+          <div className="bg-green-100 px-3 py-1 rounded-full border border-green-300">
+            <ScoreDisplay score={score} size="small" variant="green" />
+          </div>
           {/* Notificações */}
           <button
             className="relative p-2 rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-white"

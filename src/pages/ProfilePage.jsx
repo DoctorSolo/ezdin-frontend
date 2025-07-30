@@ -4,6 +4,8 @@ import Input from "../components/Input";
 import Button from "../components/Button";
 import logo_full_branca from "../assets/logo_full_branca.png";
 import Fennec_Fox from "../assets/Fennec_Fox.jpg";
+import { useScore } from "../hooks/useScore";
+import ScoreDisplay from "../components/ScoreDisplay";
 
 const ProfilePage = () => {
   const [user, setUser] = useState({
@@ -25,6 +27,7 @@ const ProfilePage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const navigate = useNavigate();
+  const { score, getScoreStats } = useScore();
 
   useEffect(() => {
     document.title = "Perfil - ezDin";
@@ -374,6 +377,34 @@ const ProfilePage = () => {
                   <div className="text-2xl font-bold text-purple-600">24h</div>
                   <div className="text-sm text-purple-700">Tempo de Estudo</div>
                 </div>
+              </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Pontuação
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <div className="mb-2">
+                    <ScoreDisplay score={score} size="xlarge" />
+                  </div>
+                  <div className="text-sm text-yellow-700">Pontos Totais</div>
+                </div>
+                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {getScoreStats().completedLessonsCount}
+                  </div>
+                  <div className="text-sm text-orange-700">
+                    Aulas Concluídas
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">
+                  <strong>Como ganhar pontos:</strong> Complete as aulas e
+                  acerte as questões para ganhar 100 pontos por questão correta!
+                </p>
               </div>
             </div>
 

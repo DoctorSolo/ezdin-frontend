@@ -4,6 +4,8 @@ import LessonQuestionsNav from "../components/LessonQuestionsNav";
 import LessonQuestion from "../components/LessonQuestion";
 import SidebarTrilhaDireita from "../components/SidebarTrilhaDireita";
 import { conteudo } from "../data/conteudo";
+import { useScore } from "../hooks/useScore";
+import ScoreNotification from "../components/ScoreNotification";
 
 const LessonPage = ({ lessonData }) => {
   // Garantir que moduloId seja tratado corretamente, mesmo sendo 0
@@ -33,6 +35,7 @@ const LessonPage = ({ lessonData }) => {
   const [activeQuestion, setActiveQuestion] = useState(0);
   const [answers, setAnswers] = useState(getInitialAnswers);
   const [showResults, setShowResults] = useState(false);
+  const { addScoreForLesson, isLessonScored, score } = useScore();
 
   // Sempre que lessonData mudar, recarregar as respostas corretas do localStorage
   useEffect(() => {
@@ -59,6 +62,34 @@ const LessonPage = ({ lessonData }) => {
     }
     // eslint-disable-next-line
   }, [lessonData?.id]);
+
+  // Calcular valores derivados
+  const allAnswered = answers.every((a) => a !== null);
+  const correctCount = answers.filter(
+    (a, i) => lessonData.questoes[i] && a === lessonData.questoes[i].correta
+  ).length;
+
+  // Adicionar pontuação quando a aula é concluída pela primeira vez
+  useEffect(() => {
+    if (
+      showResults &&
+      allAnswered &&
+      lessonData?.moduloId !== undefined &&
+      lessonData?.id !== undefined
+    ) {
+      const alreadyScored = isLessonScored(lessonData.moduloId, lessonData.id);
+      if (!alreadyScored) {
+        addScoreForLesson(lessonData.moduloId, lessonData.id, correctCount);
+      }
+    }
+  }, [
+    showResults,
+    allAnswered,
+    correctCount,
+    lessonData,
+    addScoreForLesson,
+    isLessonScored,
+  ]);
 
   // Proteção defensiva após todos os hooks
   if (!lessonData || !Array.isArray(lessonData.questoes)) {
@@ -171,10 +202,6 @@ const LessonPage = ({ lessonData }) => {
     return hasNext;
   })();
 
-  const allAnswered = answers.every((a) => a !== null);
-  const correctCount = answers.filter(
-    (a, i) => lessonData.questoes[i] && a === lessonData.questoes[i].correta
-  ).length;
   const errorList = lessonData.questoes
     .map((q, i) => ({
       ...q,
@@ -183,7 +210,20 @@ const LessonPage = ({ lessonData }) => {
     }))
     .filter((q) => !q.isCorrect);
 
+  // Renderizar tela de resultados
   if (showResults) {
+    // Adicionar pontuação quando a aula é concluída pela primeira vez
+    let pointsEarned = 0;
+    const alreadyScored = isLessonScored(lessonData.moduloId, lessonData.id);
+
+    if (allAnswered && !alreadyScored) {
+      pointsEarned = addScoreForLesson(
+        lessonData.moduloId,
+        lessonData.id,
+        correctCount
+      );
+    }
+
     return (
       <div className="flex">
         <div className="flex-1 mr-0 md:mr-[300px]">
@@ -193,6 +233,50 @@ const LessonPage = ({ lessonData }) => {
                 Você acertou {correctCount}/{lessonData.questoes.length}{" "}
                 questões em "{lessonData.titulo}"
               </div>
+
+              {/* Pontuação do usuário */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 w-full max-w-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className="w-5 h-5 text-yellow-600"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <span className="font-bold text-yellow-800">
+                      Sua Pontuação Total
+                    </span>
+                  </div>
+                  <span className="text-2xl font-bold text-yellow-600">
+                    {score.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              {pointsEarned > 0 && (
+                <ScoreNotification pointsEarned={pointsEarned} show={true} />
+              )}
+              {pointsEarned === 0 && !alreadyScored && allAnswered && (
+                <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 text-blue-800">
+                    <svg
+                      className="w-5 h-5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <span className="font-bold">
+                      Aula já pontuada anteriormente!
+                    </span>
+                  </div>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Esta aula já foi concluída e pontuada. Continue estudando
+                    para ganhar mais pontos!
+                  </p>
+                </div>
+              )}
               <div className="w-full max-w-lg mb-4">
                 <div className="flex items-center gap-4 text-sm mb-2">
                   <span className="text-green-600">{correctCount} acertos</span>
@@ -215,6 +299,77 @@ const LessonPage = ({ lessonData }) => {
                   ></div>
                 </div>
               </div>
+              {/* Detalhamento da pontuação por questão */}
+              <div className="w-full max-w-lg mb-6">
+                <div className="font-bold mb-3 text-center">
+                  Pontuação por Questão
+                </div>
+                <div className="space-y-2">
+                  {lessonData.questoes.map((questao, index) => {
+                    const isCorrect = answers[index] === questao.correta;
+                    const pointsForQuestion = isCorrect ? 100 : 0;
+
+                    return (
+                      <div
+                        key={questao.id}
+                        className={`flex items-center justify-between p-3 rounded-lg border ${
+                          isCorrect
+                            ? "bg-green-50 border-green-200"
+                            : "bg-red-50 border-red-200"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                              isCorrect ? "bg-green-500" : "bg-red-500"
+                            }`}
+                          >
+                            {isCorrect ? "✓" : "✗"}
+                          </div>
+                          <span className="font-medium">
+                            Questão {index + 1}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`font-bold ${
+                              isCorrect ? "text-green-600" : "text-red-600"
+                            }`}
+                          >
+                            {pointsForQuestion} pontos
+                          </span>
+                          {isCorrect && (
+                            <svg
+                              className="w-4 h-4 text-green-600"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Resumo da pontuação */}
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-blue-800">
+                      Total desta aula:
+                    </span>
+                    <span className="text-xl font-bold text-blue-600">
+                      {correctCount * 100} pontos
+                    </span>
+                  </div>
+                  <div className="text-sm text-blue-700">
+                    {correctCount} questões corretas × 100 pontos ={" "}
+                    {correctCount * 100} pontos
+                  </div>
+                </div>
+              </div>
+
               <div className="w-full max-w-lg mb-8">
                 <div className="font-bold mb-2">Aproveitamento na lista</div>
                 <div className="mb-2 font-semibold">Erros</div>
