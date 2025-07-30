@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { getConteudo } from "../data/conteudo";
 
 const isLessonComplete = (moduloId, lessonId) => {
@@ -15,7 +15,6 @@ const isLessonComplete = (moduloId, lessonId) => {
 };
 
 const SidebarTrilhaDireita = () => {
-  const navigate = useNavigate();
   const location = useLocation();
   const currentLessonId = Number(location.pathname.split("/").pop());
   const conteudo = getConteudo();
@@ -25,6 +24,11 @@ const SidebarTrilhaDireita = () => {
     setOpenModules((prev) =>
       prev.includes(id) ? prev.filter((mid) => mid !== id) : [...prev, id]
     );
+  };
+
+  const handleLessonClick = (lessonId) => {
+    // Força um reload completo para evitar problemas de estado
+    window.location.href = `/aula/${lessonId}`;
   };
 
   return (
@@ -70,7 +74,7 @@ const SidebarTrilhaDireita = () => {
                         `}
                         tabIndex={0}
                         aria-label={`Acessar aula ${lesson.titulo}`}
-                        onClick={() => navigate(`/aula/${lesson.id}`)}
+                        onClick={() => handleLessonClick(lesson.id)}
                       >
                         {isLessonComplete(mod.id, lesson.id) ? (
                           <span className="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span>

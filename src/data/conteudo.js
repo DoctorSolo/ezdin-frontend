@@ -384,6 +384,7 @@ export const isLessonComplete = (moduloId, aulaId) => {
   if (!saved) return false;
   try {
     const parsed = JSON.parse(saved);
+    // Só considera concluída se TODAS as respostas forem diferentes de null
     return Array.isArray(parsed) && parsed.every((a) => a !== null);
   } catch {
     return false;

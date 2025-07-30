@@ -36,6 +36,11 @@ const CoursePlatformPage = () => {
     );
   }
 
+  const handleLessonClick = (lessonId) => {
+    // Força um reload completo para evitar problemas de estado
+    window.location.href = `/aula/${lessonId}`;
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Navbar fixa */}
@@ -256,7 +261,7 @@ const CoursePlatformPage = () => {
                           hover:border-green-400 border border-transparent`}
                         tabIndex={0}
                         aria-label={`Acessar aula ${aula.titulo}`}
-                        onClick={() => setSelectedLesson(aula.id)}
+                        onClick={() => handleLessonClick(aula.id)}
                       >
                         {isLessonComplete(modulo.id, aula.id) ? (
                           <span className="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span>

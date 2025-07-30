@@ -2,15 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import LessonExplanation from "../components/LessonExplanation";
 import LessonQuestionsNav from "../components/LessonQuestionsNav";
 import LessonQuestion from "../components/LessonQuestion";
-import { useNavigate } from "react-router-dom";
 import SidebarTrilhaDireita from "../components/SidebarTrilhaDireita";
 import { conteudo } from "../data/conteudo";
 
 const LessonPage = ({ lessonData }) => {
-  const LESSON_STORAGE_KEY = `lesson-answers-${lessonData?.moduloId || "mod"}-${
-    lessonData?.id || "default"
+  // Garantir que moduloId seja tratado corretamente, mesmo sendo 0
+  const LESSON_STORAGE_KEY = `lesson-answers-${lessonData?.moduloId ?? "mod"}-${
+    lessonData?.id ?? "default"
   }`;
-  const navigate = useNavigate();
   const lastLessonIdRef = useRef(lessonData.id);
 
   // Carregar respostas do localStorage, se existirem
@@ -21,7 +20,8 @@ const LessonPage = ({ lessonData }) => {
       const parsed = JSON.parse(saved);
       if (
         Array.isArray(parsed) &&
-        parsed.length === lessonData.questoes.length
+        parsed.length === lessonData.questoes.length &&
+        parsed.every((a) => a !== null) // Só carrega se TODAS as respostas foram dadas
       ) {
         return parsed;
       }
@@ -36,11 +36,16 @@ const LessonPage = ({ lessonData }) => {
 
   // Sempre que lessonData mudar, recarregar as respostas corretas do localStorage
   useEffect(() => {
-    setAnswers(getInitialAnswers());
+    const newAnswers = getInitialAnswers();
+    setAnswers(newAnswers);
+    setActiveTab("explanation");
+    setActiveQuestion(0);
+    setShowResults(false);
   }, [lessonData, getInitialAnswers]);
 
   useEffect(() => {
-    if (lessonData) {
+    // Só salva se pelo menos uma resposta foi dada
+    if (lessonData && answers.some((a) => a !== null)) {
       localStorage.setItem(LESSON_STORAGE_KEY, JSON.stringify(answers));
     }
   }, [answers, LESSON_STORAGE_KEY, lessonData]);
@@ -142,7 +147,8 @@ const LessonPage = ({ lessonData }) => {
       if (nextAulaId) break;
     }
     if (nextAulaId) {
-      navigate(`/aula/${nextAulaId}`);
+      // Força um reload completo para evitar problemas de estado
+      window.location.href = `/aula/${nextAulaId}`;
     }
   };
 
