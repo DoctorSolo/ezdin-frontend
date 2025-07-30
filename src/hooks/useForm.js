@@ -42,7 +42,7 @@ export const useForm = (initialValues = {}, validationRules = {}) => {
 
       return "";
     },
-    [validationRules, values],
+    [validationRules, values]
   );
 
   const validateForm = useCallback(() => {
@@ -78,7 +78,7 @@ export const useForm = (initialValues = {}, validationRules = {}) => {
         }));
       }
     },
-    [errors],
+    [errors]
   );
 
   const handleBlur = useCallback(
@@ -94,7 +94,7 @@ export const useForm = (initialValues = {}, validationRules = {}) => {
         [name]: error,
       }));
     },
-    [validateField],
+    [validateField]
   );
 
   const handleSubmit = useCallback(
@@ -121,7 +121,7 @@ export const useForm = (initialValues = {}, validationRules = {}) => {
         setIsSubmitting(false);
       }
     },
-    [values, validateForm, validationRules],
+    [values, validateForm, validationRules]
   );
 
   const resetForm = useCallback(() => {
