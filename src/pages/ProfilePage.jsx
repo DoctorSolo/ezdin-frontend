@@ -27,7 +27,7 @@ const ProfilePage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const navigate = useNavigate();
-  const { score, getScoreStats } = useScore();
+  const { score, completedLessonsCount, isLoading: isScoreLoading } = useScore();
 
   useEffect(() => {
     document.title = "Perfil - ezDin";
@@ -37,25 +37,34 @@ const ProfilePage = () => {
   const loadUserProfile = async () => {
     try {
       setIsLoading(true);
-      // Simulando chamada da API
-      setTimeout(() => {
+      const response = await fetch("https://ezdin-backend.onrender.com/api/auth/status", {
+        credentials: "include", // Adicione esta linha
+      });
+      if (!response.ok) {
+        throw new Error("Erro ao carregar status do usuário.");
+      }
+      const data = await response.json();
+
+      if (data.is_authenticated) {
         const userData = {
-          name: "Clark Kent",
-          email: "clark.kent@gmail.com",
-          bio: "Estudante de finanças pessoais apaixonado por investimentos e educação financeira.",
-          joinedDate: "Julho 2025",
-          avatar: Fennec_Fox,
+          name: data.user.name,
+          email: data.user.username,
+          bio: data.user.bio,
+          joinedDate: new Date(data.user.joined_date).toLocaleDateString("pt-BR"),
+          avatar: data.user.avatar_url,
         };
         setUser(userData);
         setValues({
           name: userData.name,
-          email: userData.email,
+          email: userData.username, // Usar username para o email
           bio: userData.bio,
         });
-        setIsLoading(false);
-      }, 1000);
+      } else {
+        navigate("/login");
+      }
     } catch (error) {
       console.error("Erro ao carregar perfil:", error);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -109,14 +118,32 @@ const ProfilePage = () => {
     setSaveMessage("");
 
     try {
-      // Simulando chamada da API
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const profileData = {
+        name: values.name,
+        bio: values.bio,
+        // email (username) não pode ser alterado por este endpoint
+      };
 
+      const response = await fetch("https://ezdin-backend.onrender.com/api/auth/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(profileData),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erro ao salvar perfil.");
+      }
+
+      const updatedData = await response.json();
       const updatedUser = {
         ...user,
-        name: values.name,
-        email: values.email,
-        bio: values.bio,
+        name: updatedData.user.name,
+        bio: updatedData.user.bio,
+        avatar: updatedData.user.avatar_url,
       };
 
       setUser(updatedUser);
@@ -126,7 +153,7 @@ const ProfilePage = () => {
       setTimeout(() => setSaveMessage(""), 3000);
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
-      setSaveMessage("Erro ao salvar perfil. Tente novamente.");
+      setSaveMessage(`Erro ao salvar perfil: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -143,10 +170,22 @@ const ProfilePage = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm("Tem certeza que deseja sair?")) {
-      // Limpar dados do usuário do localStorage/sessionStorage se necessário
-      navigate("/");
+      try {
+        const response = await fetch("https://ezdin-backend.onrender.com/api/auth/logout", {
+          method: "POST",
+          credentials: "include",
+        });
+        if (response.ok) {
+          navigate("/");
+        } else {
+          throw new Error("Erro ao fazer logout.");
+        }
+      } catch (error) {
+        console.error("Erro ao fazer logout:", error);
+        alert("Não foi possível sair da conta. Tente novamente.");
+      }
     }
   };
 
@@ -369,9 +408,7 @@ const ProfilePage = () => {
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">85%</div>
-                  <div className="text-sm text-green-700">
-                    Taxa de Conclusão
-                  </div>
+                  <div className="text-sm text-green-700">Taxa de Conclusão</div>
                 </div>
                 <div className="bg-purple-50 p-4 rounded-lg">
                   <div className="text-2xl font-bold text-purple-600">24h</div>
@@ -387,13 +424,20 @@ const ProfilePage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                   <div className="mb-2">
-                    <ScoreDisplay score={score} size="xlarge" />
+                    {isScoreLoading ? (
+                      <div className="flex items-center gap-2 text-xl text-yellow-800">
+                        <span className="animate-spin h-6 w-6 border-2 border-yellow-600 border-t-transparent rounded-full"></span>
+                        <span className="font-bold">Carregando...</span>
+                      </div>
+                    ) : (
+                      <ScoreDisplay score={score} size="xlarge" />
+                    )}
                   </div>
                   <div className="text-sm text-yellow-700">Pontos Totais</div>
                 </div>
                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                   <div className="text-2xl font-bold text-orange-600">
-                    {getScoreStats().completedLessonsCount}
+                    {isScoreLoading ? "..." : completedLessonsCount}
                   </div>
                   <div className="text-sm text-orange-700">
                     Aulas Concluídas
@@ -402,8 +446,7 @@ const ProfilePage = () => {
               </div>
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">
-                  <strong>Como ganhar pontos:</strong> Complete as aulas e
-                  acerte as questões para ganhar 100 pontos por questão correta!
+                  <strong>Como ganhar pontos:</strong> Complete as aulas e acerte as questões para ganhar 100 pontos por questão correta!
                 </p>
               </div>
             </div>
