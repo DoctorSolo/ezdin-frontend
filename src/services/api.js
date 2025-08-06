@@ -1,4 +1,8 @@
-const API_BASE_URL = "http://localhost:5000";
+// Configuração da URL base da API
+const API_BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://ezdin-backend.onrender.com"
+    : "http://localhost:5000";
 
 class ApiService {
   constructor() {
@@ -12,6 +16,7 @@ class ApiService {
         "Content-Type": "application/json",
         ...options.headers,
       },
+      credentials: "include", // Importante para manter sessões
       ...options,
     };
 
@@ -21,7 +26,7 @@ class ApiService {
 
       if (!response.ok) {
         throw new Error(
-          data.message || `HTTP error! status: ${response.status}`,
+          data.message || `HTTP error! status: ${response.status}`
         );
       }
 
@@ -32,28 +37,63 @@ class ApiService {
     }
   }
 
+  // =============== AUTH ENDPOINTS ===============
   async registerUser(userData) {
-    return this.makeRequest("/api/register", {
+    return this.makeRequest("/api/auth/register", {
       method: "POST",
       body: JSON.stringify(userData),
     });
   }
 
   async loginUser(credentials) {
-    return this.makeRequest("/api/login", {
+    return this.makeRequest("/api/auth/login", {
       method: "POST",
       body: JSON.stringify(credentials),
     });
   }
 
   async logoutUser() {
-    return this.makeRequest("/api/logout", {
+    return this.makeRequest("/api/auth/logout", {
       method: "POST",
     });
   }
 
-  async getCurrentUser() {
-    return this.makeRequest("/api/user");
+  async getUserStatus() {
+    return this.makeRequest("/api/auth/status");
+  }
+
+  async updateProfile(profileData) {
+    return this.makeRequest("/api/auth/profile", {
+      method: "PUT",
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  // =============== LESSONS ENDPOINTS ===============
+  async getLessons() {
+    return this.makeRequest("/api/lessons/");
+  }
+
+  async getLessonById(lessonId) {
+    return this.makeRequest(`/api/lessons/${lessonId}`);
+  }
+
+  async completeLesson(lessonId, answer) {
+    return this.makeRequest(`/api/lessons/${lessonId}/complete`, {
+      method: "POST",
+      body: JSON.stringify({ answer }),
+    });
+  }
+
+  async getUserProgress() {
+    return this.makeRequest("/api/lessons/current_user_progress");
+  }
+
+  async createLesson(lessonData) {
+    return this.makeRequest("/api/lessons/", {
+      method: "POST",
+      body: JSON.stringify(lessonData),
+    });
   }
 }
 
