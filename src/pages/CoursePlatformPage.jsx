@@ -1,31 +1,24 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo_full_branca from "../assets/logo_full_branca.png";
-import { getConteudo, isLessonComplete } from "../data/conteudo";
 import LessonPage from "./LessonPage";
-import { useScore } from "../hooks/useScore";
+import { useAuth } from "../contexts/AuthContext";
+import { useLessons } from "../contexts/LessonsContext";
 import ScoreDisplay from "../components/ScoreDisplay";
 
 const CoursePlatformPage = () => {
   const navigate = useNavigate();
   const [selectedLesson, setSelectedLesson] = useState(null);
-  const { score } = useScore();
+  const { user, logout } = useAuth();
+  const { lessons, loading } = useLessons();
 
-  // Flatten all aulas for quick lookup
-  const conteudo = getConteudo();
-  const allAulas = conteudo.flatMap((m) =>
-    m.aulas.map((a) => ({ ...a, moduloId: m.id, moduloNome: m.nome }))
-  );
-  const getLessonById = (id) => allAulas.find((a) => a.id === id);
+  // Encontrar lição por ID
+  const getLessonById = (id) => lessons.find((lesson) => lesson.id === parseInt(id));
 
   // Progresso
-  const totalLessons = allAulas.length;
-  const progress = allAulas.filter((aula) =>
-    isLessonComplete(aula.moduloId, aula.id)
-  ).length;
-  const progressPercent = totalLessons
-    ? Math.round((progress / totalLessons) * 100)
-    : 0;
+  const totalLessons = lessons.length;
+  const completedLessons = lessons.filter(lesson => lesson.is_completed).length;
+  const progressPercent = totalLessons ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
   // Renderizar LessonPage se uma lição estiver selecionada
   if (selectedLesson) {
@@ -43,6 +36,26 @@ const CoursePlatformPage = () => {
     // Força um reload completo para evitar problemas de estado
     window.location.href = `/aula/${lessonId}`;
   };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-green-700">Carregando lições...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -69,7 +82,7 @@ const CoursePlatformPage = () => {
         <div className="flex items-center gap-4">
           {/* Pontuação */}
           <div className="bg-green-100 px-3 py-1 rounded-full border border-green-300">
-            <ScoreDisplay score={score} size="small" variant="green" />
+            <ScoreDisplay score={user?.points || 0} size="small" variant="green" />
           </div>
           {/* Notificações */}
           <button
@@ -92,16 +105,51 @@ const CoursePlatformPage = () => {
             </svg>
           </button>
           {/* Perfil */}
-          <button
-            className="flex items-center gap-2 p-1 rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-white"
-            aria-label="Perfil"
-            tabIndex={0}
-            onClick={() => navigate("/perfil")}
-          >
-            <span className="w-8 h-8 rounded-full bg-green-200 flex items-center justify-center text-green-800 font-bold border border-green-300">
-              CK
-            </span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Botões de Admin */}
+            {user?.is_admin && (
+              <div className="flex items-center gap-2 mr-4">
+                <button
+                  onClick={() => navigate("/admin")}
+                  className="flex items-center gap-1 px-3 py-1 bg-purple-500 text-white text-sm rounded-full hover:bg-purple-600 transition-colors"
+                  title="Criar Lições"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span className="hidden sm:inline">Lições</span>
+                </button>
+                <button
+                  onClick={() => navigate("/admin/users")}
+                  className="flex items-center gap-1 px-3 py-1 bg-indigo-500 text-white text-sm rounded-full hover:bg-indigo-600 transition-colors"
+                  title="Gerenciar Usuários"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 0a4 4 0 11-8 0" />
+                  </svg>
+                  <span className="hidden sm:inline">Usuários</span>
+                </button>
+              </div>
+            )}
+            <button
+              className="flex items-center gap-2 p-1 rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-white"
+              aria-label="Perfil"
+              tabIndex={0}
+              onClick={() => navigate("/perfil")}
+            >
+              <span className="w-8 h-8 rounded-full bg-green-200 flex items-center justify-center text-green-800 font-bold border border-green-300">
+                {user?.name ? user.name.charAt(0).toUpperCase() : user?.username?.charAt(0).toUpperCase() || "U"}
+              </span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="text-white hover:text-green-200 text-sm font-medium transition-colors"
+              aria-label="Logout"
+              tabIndex={0}
+            >
+              Sair
+            </button>
+          </div>
         </div>
       </nav>
       {/* Layout principal */}
@@ -237,51 +285,49 @@ const CoursePlatformPage = () => {
               />
             </div>
             <div className="text-sm text-green-700 whitespace-nowrap">
-              {progress} de {totalLessons} aulas • {progressPercent}% concluído
+              {completedLessons} de {totalLessons} aulas • {progressPercent}% concluído
             </div>
           </div>
-          {/* Seções de módulos e aulas */}
+          {/* Seção de lições */}
           <div className="space-y-4">
-            {conteudo.map((modulo) => (
-              <section
-                key={modulo.id}
-                className="bg-white rounded-lg shadow border border-green-100"
-              >
-                <div className="w-full flex items-center justify-between px-6 py-4">
-                  <span className="font-semibold text-green-800">
-                    {modulo.nome}{" "}
-                    <span className="ml-2 text-xs text-green-400">
-                      ({modulo.aulas.length} aulas)
-                    </span>
+            <section className="bg-white rounded-lg shadow border border-green-100">
+              <div className="w-full flex items-center justify-between px-6 py-4">
+                <span className="font-semibold text-green-800">
+                  Trilha de Educação Financeira{" "}
+                  <span className="ml-2 text-xs text-green-400">
+                    ({totalLessons} aulas)
                   </span>
-                </div>
-                <ul className="px-6 pb-4">
-                  {modulo.aulas.map((aula) => (
-                    <li key={aula.id} className="flex items-center gap-3 py-2">
-                      <button
-                        className={`flex items-center gap-2 px-2 py-1 rounded transition-colors w-full text-left focus:outline-none focus:ring-2 focus:ring-green-500
-                          ${
-                            isLessonComplete(modulo.id, aula.id)
-                              ? "bg-green-50 hover:bg-green-100"
-                              : "bg-white hover:bg-green-50"
-                          }
-                          hover:border-green-400 border border-transparent`}
-                        tabIndex={0}
-                        aria-label={`Acessar aula ${aula.titulo}`}
-                        onClick={() => handleLessonClick(aula.id)}
-                      >
-                        {isLessonComplete(modulo.id, aula.id) ? (
-                          <span className="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span>
-                        ) : (
-                          <span className="inline-block w-5 h-5 rounded-full border border-green-300 mr-2"></span>
-                        )}
-                        <span className="text-green-900">{aula.titulo}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
+                </span>
+              </div>
+              <ul className="px-6 pb-4">
+                {lessons.map((lesson) => (
+                  <li key={lesson.id} className="flex items-center gap-3 py-2">
+                    <button
+                      className={`flex items-center gap-2 px-2 py-1 rounded transition-colors w-full text-left focus:outline-none focus:ring-2 focus:ring-green-500
+                        ${
+                          lesson.is_completed
+                            ? "bg-green-50 hover:bg-green-100"
+                            : "bg-white hover:bg-green-50"
+                        }
+                        hover:border-green-400 border border-transparent`}
+                      tabIndex={0}
+                      aria-label={`Acessar aula ${lesson.title}`}
+                      onClick={() => handleLessonClick(lesson.id)}
+                    >
+                      {lesson.is_completed ? (
+                        <span className="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span>
+                      ) : (
+                        <span className="inline-block w-5 h-5 rounded-full border border-green-300 mr-2"></span>
+                      )}
+                      <span className="text-green-900">{lesson.title}</span>
+                      <span className="ml-auto text-xs text-green-600">
+                        {lesson.points_awarded} pts
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
           </div>
         </main>
       </div>
