@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import Logo from "../assets/Logo.png";
 
 const LoginPage = () => {
@@ -11,10 +12,18 @@ const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const navigate = useNavigate();
+  const { login, isAuthenticated } = useAuth();
 
   useEffect(() => {
     document.title = "Login - ezDin";
   }, []);
+
+  // Redirecionar se já estiver autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/plataforma");
+    }
+  }, [isAuthenticated, navigate]);
 
   const validate = () => {
     const newErrors = { email: "", password: "" };
@@ -45,34 +54,14 @@ const LoginPage = () => {
     setSubmitError("");
 
     try {
-      const response = await fetch(
-        "https://ezdin-backend.onrender.com/api/auth/login",
-        {
-          //
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: values.email,
-            password: values.password,
-          }),
-        },
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log("Login successful:", data);
-        navigate("/plataforma");
-      } else {
-        setSubmitError(data.message || "Erro desconhecido ao fazer login.");
-      }
+      await login({
+        username: values.email,
+        password: values.password,
+      });
+      navigate("/plataforma");
     } catch (error) {
       console.error("Erro durante o login:", error);
-      setSubmitError(
-        "Não foi possível conectar ao servidor. Tente novamente mais tarde.",
-      );
+      setSubmitError(error.message || "Erro desconhecido ao fazer login.");
     } finally {
       setIsSubmitting(false);
     }
