@@ -1,613 +1,339 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { conteudo as conteudoBase } from "../data/conteudo";
-
-const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
+import { useLessons } from "../contexts/LessonsContext";
 
 const AdminContentBuilder = () => {
-  const [conteudo, setConteudo] = useState(() => {
-    const saved = localStorage.getItem("conteudo");
-    return saved ? JSON.parse(saved) : deepClone(conteudoBase);
+  const [newLesson, setNewLesson] = useState({
+    title: "",
+    content: "",
+    challenge_question: "",
+    option_a: "",
+    option_b: "",
+    option_c: "",
+    option_d: "",
+    correct_option: "a",
+    explanation: "",
+    points_awarded: 10,
+    order_index: 1,
   });
-  const [moduloSelecionado, setModuloSelecionado] = useState(null);
-  const [aulaSelecionada, setAulaSelecionada] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [createStatus, setCreateStatus] = useState("");
   const navigate = useNavigate();
+  const { lessons, loading, createLesson } = useLessons();
 
-  // Função para salvar o conteúdo (exemplo: localStorage, pode ser adaptada para API)
-  const handleSave = async () => {
-    setIsSaving(true);
-    setSaveStatus("");
+  useEffect(() => {
+    if (lessons.length > 0) {
+      setNewLesson(prev => ({
+        ...prev,
+        order_index: Math.max(...lessons.map(l => l.order_index || 0)) + 1
+      }));
+    }
+  }, [lessons]);
+
+  const handleInputChange = (field) => (e) => {
+    const value = field === 'points_awarded' || field === 'order_index' 
+      ? parseInt(e.target.value) || 0 
+      : e.target.value;
+    setNewLesson(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCreateLesson = async (e) => {
+    e.preventDefault();
+    
+    if (!newLesson.title || !newLesson.content || !newLesson.challenge_question || 
+        !newLesson.option_a || !newLesson.option_b || !newLesson.option_c || !newLesson.option_d) {
+      setCreateStatus("Todos os campos são obrigatórios!");
+      return;
+    }
+
+    setIsCreating(true);
+    setCreateStatus("");
+
     try {
-      // Simulação de salvamento (substitua por chamada de API se necessário)
-      localStorage.setItem("conteudo", JSON.stringify(conteudo));
-      setSaveStatus("Salvo com sucesso!");
-    } catch {
-      setSaveStatus("Erro ao salvar!");
+      await createLesson(newLesson);
+      setCreateStatus("Lição criada com sucesso!");
+      setNewLesson({
+        title: "",
+        content: "",
+        challenge_question: "",
+        option_a: "",
+        option_b: "",
+        option_c: "",
+        option_d: "",
+        correct_option: "a",
+        explanation: "",
+        points_awarded: 10,
+        order_index: Math.max(...lessons.map(l => l.order_index || 0)) + 2,
+      });
+      setTimeout(() => setCreateStatus(""), 3000);
+    } catch (error) {
+      console.error("Erro ao criar lição:", error);
+      setCreateStatus(`Erro ao criar lição: ${error.message}`);
     } finally {
-      setIsSaving(false);
-      setTimeout(() => setSaveStatus(""), 2000);
+      setIsCreating(false);
     }
   };
 
-  // CRUD de módulos
-  const handleAddModulo = () => {
-    const nome = prompt("Nome do novo módulo:");
-    if (!nome) return;
-    setConteudo([...conteudo, { id: Date.now(), nome, aulas: [] }]);
-  };
-  const handleEditModulo = (id) => {
-    const nome = prompt("Novo nome do módulo:");
-    if (!nome) return;
-    setConteudo(conteudo.map((m) => (m.id === id ? { ...m, nome } : m)));
-  };
-  const handleDeleteModulo = (id) => {
-    if (!window.confirm("Remover módulo?")) return;
-    setConteudo(conteudo.filter((m) => m.id !== id));
-    if (moduloSelecionado === id) setModuloSelecionado(null);
-  };
-
-  // CRUD de aulas
-  const handleAddAula = () => {
-    if (!conteudo.length) return alert("Crie um módulo primeiro!");
-    const titulo = prompt("Título da nova aula:");
-    if (!titulo) return;
-    const moduloId = Number(
-      prompt(
-        "ID do módulo para esta aula: " +
-          conteudo.map((m) => `\n${m.id}: ${m.nome}`).join("")
-      )
-    );
-    if (!conteudo.find((m) => m.id === moduloId))
-      return alert("Módulo inválido!");
-    setConteudo(
-      conteudo.map((m) =>
-        m.id === moduloId
-          ? {
-              ...m,
-              aulas: [
-                ...m.aulas,
-                { id: Date.now(), titulo, explicacoes: [""], questoes: [] },
-              ],
-            }
-          : m
-      )
-    );
-  };
-  const handleEditAula = (moduloId, aulaId) => {
-    const titulo = prompt("Novo título da aula:");
-    if (!titulo) return;
-    setConteudo(
-      conteudo.map((m) =>
-        m.id === moduloId
-          ? {
-              ...m,
-              aulas: m.aulas.map((a) =>
-                a.id === aulaId ? { ...a, titulo } : a
-              ),
-            }
-          : m
-      )
-    );
-  };
-  const handleDeleteAula = (moduloId, aulaId) => {
-    if (!window.confirm("Remover aula?")) return;
-    setConteudo(
-      conteudo.map((m) =>
-        m.id === moduloId
-          ? {
-              ...m,
-              aulas: m.aulas.filter((a) => a.id !== aulaId),
-            }
-          : m
-      )
-    );
-    setAulaSelecionada(null);
-  };
-  // Mover aula para outro módulo
-  const handleMoveAula = (fromModuloId, aulaId, toModuloId) => {
-    if (fromModuloId === toModuloId) return;
-    const aula = conteudo
-      .find((m) => m.id === fromModuloId)
-      .aulas.find((a) => a.id === aulaId);
-    setConteudo(
-      conteudo.map((m) => {
-        if (m.id === fromModuloId) {
-          return { ...m, aulas: m.aulas.filter((a) => a.id !== aulaId) };
-        } else if (m.id === toModuloId) {
-          return { ...m, aulas: [...m.aulas, aula] };
-        } else {
-          return m;
-        }
-      })
-    );
-  };
-
-  // CRUD de explicações
-  const handleAddExplicacao = (moduloId, aulaId) => {
-    setConteudo(
-      conteudo.map((m) =>
-        m.id === moduloId
-          ? {
-              ...m,
-              aulas: m.aulas.map((a) =>
-                a.id === aulaId
-                  ? {
-                      ...a,
-                      explicacoes: [...a.explicacoes, ""],
-                    }
-                  : a
-              ),
-            }
-          : m
-      )
-    );
-  };
-  const handleEditExplicacao = (moduloId, aulaId, idx, texto) => {
-    setConteudo(
-      conteudo.map((m) =>
-        m.id === moduloId
-          ? {
-              ...m,
-              aulas: m.aulas.map((a) =>
-                a.id === aulaId
-                  ? {
-                      ...a,
-                      explicacoes: a.explicacoes.map((e, i) =>
-                        i === idx ? texto : e
-                      ),
-                    }
-                  : a
-              ),
-            }
-          : m
-      )
-    );
-  };
-  const handleDeleteExplicacao = (moduloId, aulaId, idx) => {
-    setConteudo(
-      conteudo.map((m) =>
-        m.id === moduloId
-          ? {
-              ...m,
-              aulas: m.aulas.map((a) =>
-                a.id === aulaId
-                  ? {
-                      ...a,
-                      explicacoes: a.explicacoes.filter((_, i) => i !== idx),
-                    }
-                  : a
-              ),
-            }
-          : m
-      )
-    );
-  };
-
-  // CRUD de questões
-  const handleAddQuestao = (moduloId, aulaId) => {
-    setConteudo(
-      conteudo.map((m) =>
-        m.id === moduloId
-          ? {
-              ...m,
-              aulas: m.aulas.map((a) =>
-                a.id === aulaId
-                  ? {
-                      ...a,
-                      questoes: [
-                        ...a.questoes,
-                        {
-                          id: Date.now(),
-                          enunciado: "",
-                          opcoes: ["", "", "", ""],
-                          correta: 0,
-                          explicacao: "",
-                        },
-                      ],
-                    }
-                  : a
-              ),
-            }
-          : m
-      )
-    );
-  };
-  const handleEditQuestao = (moduloId, aulaId, questaoIdx, campo, valor) => {
-    setConteudo(
-      conteudo.map((m) =>
-        m.id === moduloId
-          ? {
-              ...m,
-              aulas: m.aulas.map((a) =>
-                a.id === aulaId
-                  ? {
-                      ...a,
-                      questoes: a.questoes.map((q, i) =>
-                        i === questaoIdx ? { ...q, [campo]: valor } : q
-                      ),
-                    }
-                  : a
-              ),
-            }
-          : m
-      )
-    );
-  };
-  const handleEditQuestaoOpcao = (
-    moduloId,
-    aulaId,
-    questaoIdx,
-    opcaoIdx,
-    valor
-  ) => {
-    setConteudo(
-      conteudo.map((m) =>
-        m.id === moduloId
-          ? {
-              ...m,
-              aulas: m.aulas.map((a) =>
-                a.id === aulaId
-                  ? {
-                      ...a,
-                      questoes: a.questoes.map((q, i) =>
-                        i === questaoIdx
-                          ? {
-                              ...q,
-                              opcoes: q.opcoes.map((o, j) =>
-                                j === opcaoIdx ? valor : o
-                              ),
-                            }
-                          : q
-                      ),
-                    }
-                  : a
-              ),
-            }
-          : m
-      )
-    );
-  };
-  const handleDeleteQuestao = (moduloId, aulaId, questaoIdx) => {
-    setConteudo(
-      conteudo.map((m) =>
-        m.id === moduloId
-          ? {
-              ...m,
-              aulas: m.aulas.map((a) =>
-                a.id === aulaId
-                  ? {
-                      ...a,
-                      questoes: a.questoes.filter((_, i) => i !== questaoIdx),
-                    }
-                  : a
-              ),
-            }
-          : m
-      )
-    );
-  };
-
-  // Renderização
-  return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex items-center mb-4 gap-2">
-        <h1 className="text-2xl font-bold flex-1">Administração de Conteúdo</h1>
-        <button
-          className="bg-gray-500 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
-          onClick={() => navigate("/plataforma")}
-          aria-label="Voltar para Plataforma"
-          tabIndex={0}
-          onKeyDown={(e) =>
-            (e.key === "Enter" || e.key === " ") && navigate("/plataforma")
-          }
-        >
-          Voltar para Plataforma
-        </button>
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-60"
-          onClick={handleSave}
-          aria-label="Salvar alterações"
-          tabIndex={0}
-          onKeyDown={(e) =>
-            (e.key === "Enter" || e.key === " ") && handleSave()
-          }
-          disabled={isSaving}
-        >
-          {isSaving ? "Salvando..." : "Salvar"}
-        </button>
-        {saveStatus && (
-          <span className="ml-2 text-green-600 font-medium" aria-live="polite">
-            {saveStatus}
-          </span>
-        )}
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-green-700">Carregando...</p>
+        </div>
       </div>
-      {/* Lista de módulos */}
-      <div className="mb-8">
-        <div className="flex items-center mb-2">
-          <h2 className="text-xl font-semibold flex-1">Módulos</h2>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">
+            Administração de Conteúdo
+          </h1>
           <button
-            className="bg-green-500 text-white px-3 py-1 rounded"
-            onClick={handleAddModulo}
+            className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+            onClick={() => navigate("/plataforma")}
           >
-            Novo módulo
-          </button>
-          <button
-            className="bg-green-400 text-white px-3 py-1 rounded ml-2"
-            onClick={handleAddAula}
-          >
-            Nova aula
+            Voltar para Plataforma
           </button>
         </div>
-        <ul className="space-y-2">
-          {conteudo.map((modulo) => (
-            <li
-              key={modulo.id}
-              className={`border rounded p-3 ${
-                moduloSelecionado === modulo.id
-                  ? "border-green-500"
-                  : "border-gray-200"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span
-                  className="font-semibold cursor-pointer"
-                  onClick={() => setModuloSelecionado(modulo.id)}
+
+        {/* Status Message */}
+        {createStatus && (
+          <div className={`mb-6 p-4 rounded-lg ${
+            createStatus.includes("sucesso") 
+              ? "bg-green-50 border border-green-200 text-green-700"
+              : "bg-red-50 border border-red-200 text-red-700"
+          }`}>
+            {createStatus}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Form para criar nova lição */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Criar Nova Lição
+            </h2>
+            
+            <form onSubmit={handleCreateLesson} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Título da Lição
+                </label>
+                <input
+                  type="text"
+                  value={newLesson.title}
+                  onChange={handleInputChange("title")}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="Digite o título da lição"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Conteúdo da Lição
+                </label>
+                <textarea
+                  value={newLesson.content}
+                  onChange={handleInputChange("content")}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+                  placeholder="Digite o conteúdo explicativo da lição"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Pergunta do Desafio
+                </label>
+                <input
+                  type="text"
+                  value={newLesson.challenge_question}
+                  onChange={handleInputChange("challenge_question")}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="Digite a pergunta do desafio"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Opção A
+                </label>
+                <input
+                  type="text"
+                  value={newLesson.option_a}
+                  onChange={handleInputChange("option_a")}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="Digite a opção A"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Opção B
+                </label>
+                <input
+                  type="text"
+                  value={newLesson.option_b}
+                  onChange={handleInputChange("option_b")}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="Digite a opção B"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Opção C
+                </label>
+                <input
+                  type="text"
+                  value={newLesson.option_c}
+                  onChange={handleInputChange("option_c")}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="Digite a opção C"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Opção D
+                </label>
+                <input
+                  type="text"
+                  value={newLesson.option_d}
+                  onChange={handleInputChange("option_d")}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="Digite a opção D"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Resposta Correta
+                </label>
+                <select
+                  value={newLesson.correct_option}
+                  onChange={handleInputChange("correct_option")}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  required
                 >
-                  {modulo.nome}
-                </span>
-                <div className="space-x-2">
-                  <button
-                    className="text-blue-600"
-                    onClick={() => handleEditModulo(modulo.id)}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    className="text-red-600"
-                    onClick={() => handleDeleteModulo(modulo.id)}
-                  >
-                    Excluir
-                  </button>
+                  <option value="a">A</option>
+                  <option value="b">B</option>
+                  <option value="c">C</option>
+                  <option value="d">D</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Explicação da Resposta
+                </label>
+                <textarea
+                  value={newLesson.explanation}
+                  onChange={handleInputChange("explanation")}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+                  placeholder="Digite uma explicação para a resposta correta"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pontos
+                  </label>
+                  <input
+                    type="number"
+                    value={newLesson.points_awarded}
+                    onChange={handleInputChange("points_awarded")}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    min="1"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ordem
+                  </label>
+                  <input
+                    type="number"
+                    value={newLesson.order_index}
+                    onChange={handleInputChange("order_index")}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    min="1"
+                    required
+                  />
                 </div>
               </div>
-              {/* Lista de aulas do módulo selecionado */}
-              {moduloSelecionado === modulo.id && (
-                <div className="mt-4 ml-4">
-                  <div className="flex items-center mb-2">
-                    <h3 className="text-lg font-medium flex-1">Aulas</h3>
-                  </div>
-                  <ul className="space-y-1">
-                    {modulo.aulas.map((aula) => (
-                      <li
-                        key={aula.id}
-                        className={`border rounded p-2 ${
-                          aulaSelecionada === aula.id
-                            ? "border-green-400"
-                            : "border-gray-200"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span
-                            className="cursor-pointer"
-                            onClick={() => setAulaSelecionada(aula.id)}
-                          >
-                            {aula.titulo}
-                          </span>
-                          <div className="space-x-2">
-                            <button
-                              className="text-blue-600"
-                              onClick={() => handleEditAula(modulo.id, aula.id)}
-                            >
-                              Editar
-                            </button>
-                            <button
-                              className="text-red-600"
-                              onClick={() =>
-                                handleDeleteAula(modulo.id, aula.id)
-                              }
-                            >
-                              Excluir
-                            </button>
-                            <button
-                              className="text-gray-600"
-                              onClick={() => {
-                                const toModuloId = Number(
-                                  prompt(
-                                    "Mover para qual módulo? " +
-                                      conteudo
-                                        .filter((m) => m.id !== modulo.id)
-                                        .map((m) => `\n${m.id}: ${m.nome}`)
-                                        .join("")
-                                  )
-                                );
-                                if (
-                                  toModuloId &&
-                                  conteudo.find((m) => m.id === toModuloId)
-                                )
-                                  handleMoveAula(
-                                    modulo.id,
-                                    aula.id,
-                                    toModuloId
-                                  );
-                              }}
-                            >
-                              Mover
-                            </button>
+
+              <button
+                type="submit"
+                disabled={isCreating}
+                className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isCreating ? "Criando..." : "Criar Lição"}
+              </button>
+            </form>
+          </div>
+
+          {/* Lista de lições existentes */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Lições Existentes ({lessons.length})
+            </h2>
+            
+            {lessons.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">
+                Nenhuma lição criada ainda.
+              </p>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {lessons
+                  .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+                  .map((lesson) => (
+                    <div
+                      key={lesson.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-800 mb-1">
+                            {lesson.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                            {lesson.content.substring(0, 100)}...
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>Ordem: {lesson.order_index}</span>
+                            <span>Pontos: {lesson.points_awarded}</span>
+                            <span className={`px-2 py-1 rounded-full ${
+                              lesson.is_completed 
+                                ? "bg-green-100 text-green-800" 
+                                : "bg-gray-100 text-gray-600"
+                            }`}>
+                              {lesson.is_completed ? "Concluída" : "Pendente"}
+                            </span>
                           </div>
                         </div>
-                        {/* Editor de aula */}
-                        {aulaSelecionada === aula.id && (
-                          <div className="mt-3 ml-3">
-                            {/* Explicações */}
-                            <div className="mb-4">
-                              <div className="flex items-center mb-1">
-                                <span className="font-semibold flex-1">
-                                  Explicações
-                                </span>
-                                <button
-                                  className="text-green-600"
-                                  onClick={() =>
-                                    handleAddExplicacao(modulo.id, aula.id)
-                                  }
-                                >
-                                  + Explicação
-                                </button>
-                              </div>
-                              <ul className="space-y-1">
-                                {aula.explicacoes.map((exp, idx) => (
-                                  <li
-                                    key={idx}
-                                    className="flex items-center space-x-2"
-                                  >
-                                    <textarea
-                                      className="border rounded p-1 flex-1"
-                                      value={exp}
-                                      onChange={(e) =>
-                                        handleEditExplicacao(
-                                          modulo.id,
-                                          aula.id,
-                                          idx,
-                                          e.target.value
-                                        )
-                                      }
-                                      rows={2}
-                                    />
-                                    <button
-                                      className="text-red-500"
-                                      onClick={() =>
-                                        handleDeleteExplicacao(
-                                          modulo.id,
-                                          aula.id,
-                                          idx
-                                        )
-                                      }
-                                    >
-                                      Excluir
-                                    </button>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                            {/* Questões */}
-                            <div>
-                              <div className="flex items-center mb-1">
-                                <span className="font-semibold flex-1">
-                                  Questões
-                                </span>
-                                <button
-                                  className="text-green-600"
-                                  onClick={() =>
-                                    handleAddQuestao(modulo.id, aula.id)
-                                  }
-                                >
-                                  + Questão
-                                </button>
-                              </div>
-                              <ul className="space-y-2">
-                                {aula.questoes.map((q, qidx) => (
-                                  <li key={q.id} className="border rounded p-2">
-                                    <div className="mb-1">
-                                      <input
-                                        className="border rounded p-1 w-full mb-1"
-                                        value={q.enunciado}
-                                        onChange={(e) =>
-                                          handleEditQuestao(
-                                            modulo.id,
-                                            aula.id,
-                                            qidx,
-                                            "enunciado",
-                                            e.target.value
-                                          )
-                                        }
-                                        placeholder="Enunciado da questão"
-                                      />
-                                    </div>
-                                    <div className="mb-1">
-                                      <span className="text-xs">Opções:</span>
-                                      {q.opcoes.map((op, opidx) => (
-                                        <div
-                                          key={opidx}
-                                          className="flex items-center space-x-2 mb-1"
-                                        >
-                                          <input
-                                            className="border rounded p-1 flex-1"
-                                            value={op}
-                                            onChange={(e) =>
-                                              handleEditQuestaoOpcao(
-                                                modulo.id,
-                                                aula.id,
-                                                qidx,
-                                                opidx,
-                                                e.target.value
-                                              )
-                                            }
-                                            placeholder={`Opção ${opidx + 1}`}
-                                          />
-                                          <input
-                                            type="radio"
-                                            name={`correta-${q.id}`}
-                                            checked={q.correta === opidx}
-                                            onChange={() =>
-                                              handleEditQuestao(
-                                                modulo.id,
-                                                aula.id,
-                                                qidx,
-                                                "correta",
-                                                opidx
-                                              )
-                                            }
-                                          />
-                                          <span className="text-xs">
-                                            Correta
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                    <div className="mb-1">
-                                      <textarea
-                                        className="border rounded p-1 w-full"
-                                        value={q.explicacao}
-                                        onChange={(e) =>
-                                          handleEditQuestao(
-                                            modulo.id,
-                                            aula.id,
-                                            qidx,
-                                            "explicacao",
-                                            e.target.value
-                                          )
-                                        }
-                                        placeholder="Explicação da resposta"
-                                        rows={2}
-                                      />
-                                    </div>
-                                    <button
-                                      className="text-red-500"
-                                      onClick={() =>
-                                        handleDeleteQuestao(
-                                          modulo.id,
-                                          aula.id,
-                                          qidx
-                                        )
-                                      }
-                                    >
-                                      Excluir questão
-                                    </button>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
