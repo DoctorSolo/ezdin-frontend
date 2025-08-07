@@ -3,69 +3,40 @@ import { useNavigate } from "react-router-dom";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import logo_full_branca from "../assets/logo_full_branca.png";
-import Fennec_Fox from "../assets/Fennec_Fox.jpg";
-import { useScore } from "../hooks/useScore";
+import { useAuth } from "../contexts/AuthContext";
+import { useLessons } from "../contexts/LessonsContext";
 import ScoreDisplay from "../components/ScoreDisplay";
 
 const ProfilePage = () => {
-  const [user, setUser] = useState({
-    name: "",
-    email: "",
-    bio: "",
-    joinedDate: "",
-    avatar: null,
-  });
   const [isEditing, setIsEditing] = useState(false);
   const [values, setValues] = useState({
     name: "",
-    email: "",
     bio: "",
   });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const navigate = useNavigate();
-  const { score, getScoreStats } = useScore();
+  const { user, logout, updateProfile } = useAuth();
+  const { lessons } = useLessons();
 
   useEffect(() => {
     document.title = "Perfil - ezDin";
-    loadUserProfile();
-  }, []);
-
-  const loadUserProfile = async () => {
-    try {
-      setIsLoading(true);
-      // Simulando chamada da API
-      setTimeout(() => {
-        const userData = {
-          name: "Clark Kent",
-          email: "clark.kent@gmail.com",
-          bio: "Estudante de finanças pessoais apaixonado por investimentos e educação financeira.",
-          joinedDate: "Julho 2025",
-          avatar: Fennec_Fox,
-        };
-        setUser(userData);
-        setValues({
-          name: userData.name,
-          email: userData.email,
-          bio: userData.bio,
-        });
-        setIsLoading(false);
-      }, 1000);
-    } catch (error) {
-      console.error("Erro ao carregar perfil:", error);
-      setIsLoading(false);
+    if (user) {
+      setValues({
+        name: user.name || "",
+        bio: user.bio || "",
+      });
     }
-  };
+  }, [user]);
+
+  const completedLessons = lessons.filter(lesson => lesson.is_completed).length;
+  const completionRate = lessons.length > 0 ? Math.round((completedLessons / lessons.length) * 100) : 0;
 
   const validate = () => {
     const newErrors = {};
-    if (!values.name.trim()) newErrors.name = "Nome é obrigatório";
-    if (!values.email.trim()) newErrors.email = "Email é obrigatório";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email))
-      newErrors.email = "Email inválido";
+    if (!values.name?.trim()) newErrors.name = "Nome é obrigatório";
     return newErrors;
   };
 
@@ -89,9 +60,8 @@ const ProfilePage = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setValues({
-      name: user.name,
-      email: user.email,
-      bio: user.bio,
+      name: user?.name || "",
+      bio: user?.bio || "",
     });
     setErrors({});
     setTouched({});
@@ -99,7 +69,7 @@ const ProfilePage = () => {
   };
 
   const handleSave = async () => {
-    setTouched({ name: true, email: true, bio: true });
+    setTouched({ name: true, bio: true });
     const validation = validate();
     setErrors(validation);
 
@@ -109,48 +79,35 @@ const ProfilePage = () => {
     setSaveMessage("");
 
     try {
-      // Simulando chamada da API
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      const updatedUser = {
-        ...user,
+      await updateProfile({
         name: values.name,
-        email: values.email,
         bio: values.bio,
-      };
+      });
 
-      setUser(updatedUser);
       setIsEditing(false);
       setSaveMessage("Perfil atualizado com sucesso!");
-
       setTimeout(() => setSaveMessage(""), 3000);
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
-      setSaveMessage("Erro ao salvar perfil. Tente novamente.");
+      setSaveMessage(`Erro ao salvar perfil: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setUser((prev) => ({ ...prev, avatar: e.target.result }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm("Tem certeza que deseja sair?")) {
-      // Limpar dados do usuário do localStorage/sessionStorage se necessário
-      navigate("/");
+      try {
+        await logout();
+        navigate("/login");
+      } catch (error) {
+        console.error("Erro ao fazer logout:", error);
+        alert("Não foi possível sair da conta. Tente novamente.");
+      }
     }
   };
 
-  if (isLoading) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center">
@@ -160,6 +117,14 @@ const ProfilePage = () => {
       </div>
     );
   }
+
+  const formatDate = (dateString) => {
+    try {
+      return new Date(dateString).toLocaleDateString("pt-BR");
+    } catch {
+      return "Data não disponível";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -206,54 +171,24 @@ const ProfilePage = () => {
             <div className="flex items-center space-x-6">
               <div className="relative">
                 <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center overflow-hidden">
-                  {user.avatar ? (
+                  {user.avatar_url ? (
                     <img
-                      src={user.avatar}
+                      src={user.avatar_url}
                       alt="Avatar do usuário"
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-2xl font-bold">
-                      {user.name.charAt(0).toUpperCase()}
+                      {(user.name || user.username || "U").charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>
-                {isEditing && (
-                  <label className="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarChange}
-                      className="hidden"
-                      aria-label="Alterar foto do perfil"
-                    />
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                  </label>
-                )}
               </div>
               <div className="text-white">
-                <h2 className="text-2xl font-bold mb-1">{user.name}</h2>
-                <p className="text-green-100 mb-1">{user.email}</p>
+                <h2 className="text-2xl font-bold mb-1">{user.name || "Nome não informado"}</h2>
+                <p className="text-green-100 mb-1">{user.username}</p>
                 <p className="text-green-200 text-sm">
-                  Membro desde {user.joinedDate}
+                  Membro desde {new Date(user.joined_date).toLocaleDateString("pt-BR")}
                 </p>
               </div>
             </div>
@@ -313,7 +248,7 @@ const ProfilePage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
                 label="Nome Completo"
-                value={isEditing ? values.name : user.name}
+                value={isEditing ? values.name : (user.name || "")}
                 onChange={handleChange("name")}
                 onBlur={handleBlur("name")}
                 error={touched.name ? errors.name : ""}
@@ -325,12 +260,9 @@ const ProfilePage = () => {
               <Input
                 label="Email"
                 type="email"
-                value={isEditing ? values.email : user.email}
-                onChange={handleChange("email")}
-                onBlur={handleBlur("email")}
-                error={touched.email ? errors.email : ""}
-                disabled={!isEditing}
-                placeholder="Digite seu email"
+                value={user.username || ""}
+                disabled={true}
+                placeholder="Email (não pode ser alterado)"
                 aria-label="Email"
               />
 
@@ -339,7 +271,7 @@ const ProfilePage = () => {
                   Biografia
                 </label>
                 <textarea
-                  value={isEditing ? values.bio : user.bio}
+                  value={isEditing ? values.bio : (user.bio || "")}
                   onChange={handleChange("bio")}
                   onBlur={handleBlur("bio")}
                   disabled={!isEditing}
@@ -364,18 +296,16 @@ const ProfilePage = () => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">12</div>
-                  <div className="text-sm text-blue-700">Cursos Concluídos</div>
+                  <div className="text-2xl font-bold text-blue-600">{completedLessons}</div>
+                  <div className="text-sm text-blue-700">Lições Concluídas</div>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">85%</div>
-                  <div className="text-sm text-green-700">
-                    Taxa de Conclusão
-                  </div>
+                  <div className="text-2xl font-bold text-green-600">{Math.round((completedLessons / Math.max(lessons.length, 1)) * 100)}%</div>
+                  <div className="text-sm text-green-700">Taxa de Conclusão</div>
                 </div>
                 <div className="bg-purple-50 p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">24h</div>
-                  <div className="text-sm text-purple-700">Tempo de Estudo</div>
+                  <div className="text-2xl font-bold text-purple-600">{lessons.length}</div>
+                  <div className="text-sm text-purple-700">Total de Lições</div>
                 </div>
               </div>
             </div>
@@ -387,23 +317,22 @@ const ProfilePage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                   <div className="mb-2">
-                    <ScoreDisplay score={score} size="xlarge" />
+                    <ScoreDisplay score={user.points || 0} size="xlarge" />
                   </div>
                   <div className="text-sm text-yellow-700">Pontos Totais</div>
                 </div>
                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                   <div className="text-2xl font-bold text-orange-600">
-                    {getScoreStats().completedLessonsCount}
+                    {completedLessons}
                   </div>
                   <div className="text-sm text-orange-700">
-                    Aulas Concluídas
+                    Lições Concluídas
                   </div>
                 </div>
               </div>
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">
-                  <strong>Como ganhar pontos:</strong> Complete as aulas e
-                  acerte as questões para ganhar 100 pontos por questão correta!
+                  <strong>Como ganhar pontos:</strong> Complete as lições e acerte as questões para ganhar {lessons.length > 0 ? lessons[0]?.points_awarded || 10 : 10} pontos por lição!
                 </p>
               </div>
             </div>

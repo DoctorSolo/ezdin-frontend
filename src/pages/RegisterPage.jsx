@@ -8,6 +8,9 @@ import Button from "../components/Button";
 // Importa hook de navegação do React Router
 import { useNavigate } from "react-router-dom";
 
+// Importa o contexto de autenticação
+import { useAuth } from "../contexts/AuthContext";
+
 // Importa a imagem da logo
 import Logo from "../assets/Logo.png";
 
@@ -46,10 +49,20 @@ const RegisterPage = () => {
   // Hook para redirecionar o usuário
   const navigate = useNavigate();
 
+  // Hook para acessar funções de autenticação
+  const { register: registerUser, isAuthenticated } = useAuth();
+
   // Altera o título da aba ao carregar a página
   useEffect(() => {
     document.title = "Cadastro - ezDin";
   }, []);
+
+  // Redirecionar se já estiver autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/plataforma");
+    }
+  }, [isAuthenticated, navigate]);
 
   // Função que valida os campos do formulário
   const validate = () => {
@@ -116,38 +129,18 @@ const RegisterPage = () => {
     setSubmitError("");
 
     try {
-      // Envia os dados para o backend
-      const response = await fetch(
-        "https://ezdin-backend.onrender.com/api/auth/register",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: values.email,
-            password: values.password,
-          }),
-        }
-      );
-
-      // Converte a resposta para JSON
-      const data = await response.json();
-
-      // Verifica se o cadastro foi bem-sucedido
-      if (response.ok) {
-        console.log("Registro bem-sucedido:", data);
-        setSubmitSuccess(true); // Exibe tela de sucesso
-      } else {
-        // Exibe mensagem de erro recebida do servidor
-        setSubmitError(data.message || "Erro desconhecido ao registrar.");
-      }
+      // Envia os dados para o backend usando o contexto
+      await registerUser({
+        username: values.email,
+        password: values.password,
+      });
+      
+      console.log("Registro bem-sucedido");
+      setSubmitSuccess(true); // Exibe tela de sucesso
     } catch (error) {
-      // Captura falhas de conexão
+      // Exibe mensagem de erro recebida do servidor
       console.error("Erro durante o registro:", error);
-      setSubmitError(
-        "Não foi possível conectar ao servidor. Tente novamente mais tarde."
-      );
+      setSubmitError(error.message || "Erro desconhecido ao registrar.");
     } finally {
       // Finaliza envio
       setIsSubmitting(false);
